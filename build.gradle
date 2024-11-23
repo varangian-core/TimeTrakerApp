@@ -2,7 +2,7 @@ plugins {
     id 'java'
 }
 
-group = 'org.example'
+group = 'com.synthwave.timetracker'
 version = '1.0-SNAPSHOT'
 
 repositories {
@@ -10,8 +10,15 @@ repositories {
 }
 
 dependencies {
+    // Use JUnit BOM for managing JUnit dependencies
     testImplementation platform('org.junit:junit-bom:5.9.1')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+java {
+    // Set the Java version compatibility to Java 21
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 test {
