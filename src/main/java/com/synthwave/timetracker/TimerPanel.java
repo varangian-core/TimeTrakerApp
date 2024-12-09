@@ -3,11 +3,10 @@ package com.synthwave.timetracker;
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-class TimerPanel extends JPanel {
-    private PomodoroTimer pomodoroTimer;
+public class TimerPanel extends JPanel {
+    public PomodoroTimer pomodoroTimer;
     private boolean isMinimized = false;
     private JButton minimizeButton;
     private JButton maximizeButton;
@@ -24,12 +23,12 @@ class TimerPanel extends JPanel {
 
         JPanel timerContainer = new JPanel(new BorderLayout());
         timerContainer.setOpaque(false);
-        timerContainer.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0)); // Top padding
+        timerContainer.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
         timerContainer.add(timerLabel, BorderLayout.CENTER);
 
         minimizeButton = createMinimizeButton(frame);
         maximizeButton = createMaximizeButton(frame);
-        maximizeButton.setVisible(false); // Initially hide maximize button
+        maximizeButton.setVisible(false);
 
         JPanel controlButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         controlButtonPanel.setOpaque(false);
@@ -67,8 +66,8 @@ class TimerPanel extends JPanel {
         button.setContentAreaFilled(false);
         button.setOpaque(true);
         button.setBorder(BorderFactory.createCompoundBorder(
-                button.getBorder(),
-                BorderFactory.createEmptyBorder(5, 15, 5, 15)
+            button.getBorder(),
+            BorderFactory.createEmptyBorder(5, 15, 5, 15)
         ));
         button.setFont(new Font("Serif", Font.BOLD, 14));
         button.setBorder(new RoundedBorder(15));
@@ -77,7 +76,7 @@ class TimerPanel extends JPanel {
     }
 
     private JButton createMinimizeButton(JFrame frame) {
-        JButton button = new JButton("\u25F4"); // Unicode for minimize icon
+        JButton button = new JButton("\u25F4");
         button.setFont(new Font("Serif", Font.BOLD, 24));
         button.setForeground(Color.BLACK);
         button.setFocusPainted(false);
@@ -89,7 +88,7 @@ class TimerPanel extends JPanel {
     }
 
     private JButton createMaximizeButton(JFrame frame) {
-        JButton button = new JButton("\u25F5"); // Unicode for maximize icon
+        JButton button = new JButton("\u25F5");
         button.setFont(new Font("Serif", Font.BOLD, 24));
         button.setForeground(Color.BLACK);
         button.setFocusPainted(false);
@@ -102,7 +101,7 @@ class TimerPanel extends JPanel {
 
     private void minimize(JFrame frame) {
         if (!isMinimized) {
-            frame.setSize(450, 220); // Increased height to accommodate buttons
+            frame.setSize(450, 220);
             isMinimized = true;
             minimizeButton.setVisible(false);
             maximizeButton.setVisible(true);

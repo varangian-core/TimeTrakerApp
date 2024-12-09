@@ -3,8 +3,9 @@ package com.synthwave.timetracker;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.Serializable;
 
-class PomodoroTimer {
+public class PomodoroTimer implements Serializable {
     private Timer timer;
     private int timeRemaining; // in seconds
     private boolean isRunning;

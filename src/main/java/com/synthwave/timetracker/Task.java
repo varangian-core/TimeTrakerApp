@@ -8,11 +8,13 @@ class Task implements Serializable {
     private String name;
     private String state; // e.g., "To-Do", "In-Progress", "Done"
     private List<Session> sessions;
+    private List<Task> subtasks; // New field for subtasks
 
     public Task(String name, String state) {
         this.name = name;
         this.state = state;
         this.sessions = new ArrayList<>();
+        this.subtasks = new ArrayList<>(); // Initialize subtasks list
     }
 
     public String getName() {
@@ -37,6 +39,15 @@ class Task implements Serializable {
 
     public List<Session> getSessions() {
         return sessions;
+    }
+
+    // New methods for subtasks
+    public List<Task> getSubtasks() {
+        return subtasks;
+    }
+
+    public void addSubtask(Task subtask) {
+        this.subtasks.add(subtask);
     }
 
     @Override
