@@ -1,18 +1,27 @@
 package com.synthwave.timetracker;
 
+import java.util.List;
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.*;
 
 class SessionPanel extends GradientPanel {
     private JTree sessionTree;
     private DefaultMutableTreeNode root;
     private DefaultTreeModel treeModel;
+
+    // Debug components
+    private JTextArea debugArea;
+    private boolean debugMode = false;
 
     public SessionPanel() {
         setLayout(new BorderLayout());
@@ -26,7 +35,17 @@ class SessionPanel extends GradientPanel {
         root = new DefaultMutableTreeNode("Sessions");
         treeModel = new DefaultTreeModel(root);
         sessionTree = new JTree(treeModel);
-        sessionTree.setCellRenderer(new SessionTreeCellRenderer());
+        sessionTree.setRowHeight(24);
+
+        // Initialize debug area first, so that debugLog can be used immediately
+        debugArea = new JTextArea(5, 50);
+        debugArea.setEditable(false);
+        JScrollPane debugScroll = new JScrollPane(debugArea);
+        add(debugScroll, BorderLayout.EAST);
+
+        // Now we can safely set the cell renderer, since debugArea is ready
+        sessionTree.setCellRenderer(new SessionTreeCellRenderer(20, 20, this));
+
         sessionTree.setDragEnabled(true);
         sessionTree.setDropMode(DropMode.ON);
         sessionTree.setTransferHandler(new SessionTransferHandler());
@@ -34,12 +53,10 @@ class SessionPanel extends GradientPanel {
         JScrollPane sessionScrollPane = new JScrollPane(sessionTree);
         add(sessionScrollPane, BorderLayout.CENTER);
 
-        // Panel to add new sessions
         JPanel addSessionPanel = new JPanel(new BorderLayout());
         GradientLabel addSessionLabel = new GradientLabel("Add Session");
         addSessionPanel.add(addSessionLabel, BorderLayout.NORTH);
 
-        // Set a tooltip explaining how to create sessions and drag tasks in
         addSessionPanel.setToolTipText("<html><b>Instructions:</b><br>"
             + "1. Enter a session name and duration, then click 'Add Session' or press Enter.<br>"
             + "2. Once sessions are created, you can drag and drop tasks into them from the other panel.</html>");
@@ -62,6 +79,10 @@ class SessionPanel extends GradientPanel {
         sessionDurationField.addActionListener(e -> addSession(sessionNameField, sessionDurationField));
 
         add(addSessionPanel, BorderLayout.SOUTH);
+
+        if (debugMode) {
+            printClasspathResources();
+        }
     }
 
     private void addSession(JTextField sessionNameField, JTextField sessionDurationField) {
@@ -101,7 +122,6 @@ class SessionPanel extends GradientPanel {
         sessionTree.repaint();
     }
 
-    // Refresh the entire tree, e.g. after tasks are dragged in
     public void refreshTree() {
         List<DefaultMutableTreeNode> sessionNodes = getSessionNodes();
         for (DefaultMutableTreeNode sessionNode : sessionNodes) {
@@ -124,9 +144,6 @@ class SessionPanel extends GradientPanel {
         return sessionNodes;
     }
 
-    /**
-     * Update the specific task node in the tree after a task’s state or other properties have changed.
-     */
     public void updateTaskNode(Task task) {
         DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
         updateTaskNodeRecursive(rootNode, task);
@@ -137,15 +154,32 @@ class SessionPanel extends GradientPanel {
         if (userObject instanceof Task) {
             Task nodeTask = (Task) userObject;
             if (nodeTask.getName().equals(task.getName())) {
-                // Found the matching task node
                 treeModel.nodeChanged(node);
                 return;
             }
         }
-
         for (int i = 0; i < node.getChildCount(); i++) {
             DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) node.getChildAt(i);
             updateTaskNodeRecursive(childNode, task);
+        }
+    }
+
+    public void debugLog(String message) {
+        if (debugMode && debugArea != null) {
+            debugArea.append(message + "\n");
+        }
+    }
+
+    private void printClasspathResources() {
+        debugLog("Debug: Printing classpath resources");
+        try {
+            Enumeration<URL> resources = getClass().getClassLoader().getResources("");
+            while (resources.hasMoreElements()) {
+                URL url = resources.nextElement();
+                debugLog("Resource root: " + url);
+            }
+        } catch (IOException e) {
+            debugLog("Error enumerating resources: " + e.getMessage());
         }
     }
 
@@ -171,15 +205,63 @@ class SessionPanel extends GradientPanel {
     }
 
     private static class SessionTreeCellRenderer extends DefaultTreeCellRenderer {
-        private final Icon toDoIcon = UIManager.getIcon("OptionPane.informationIcon");
-        private final Icon inProgressIcon = UIManager.getIcon("OptionPane.warningIcon");
-        private final Icon doneIcon = UIManager.getIcon("OptionPane.questionIcon");
+        private Icon[] todoIcons;
+        private Icon[] inProgressIcons;
+        private Icon[] doneIcons;
+
+        private final int iconWidth;
+        private final int iconHeight;
+        private final Random random = new Random();
+        private final SessionPanel parentPanel;
+
+        public SessionTreeCellRenderer(int iconWidth, int iconHeight, SessionPanel parentPanel) {
+            this.iconWidth = iconWidth;
+            this.iconHeight = iconHeight;
+            this.parentPanel = parentPanel;
+            loadIcons();
+        }
+
+        private void loadIcons() {
+            todoIcons = new Icon[] {
+                loadAndScaleIcon("todo-1.png"),
+                loadAndScaleIcon("todo-2.png")
+            };
+
+            inProgressIcons = new Icon[] {
+                loadAndScaleIcon("inprogress-1.png"),
+                loadAndScaleIcon("inprogress-2.png")
+            };
+
+            doneIcons = new Icon[] {
+                loadAndScaleIcon("done-1.png"),
+                loadAndScaleIcon("done-2.png")
+            };
+        }
+
+        private Icon loadAndScaleIcon(String resourceName) {
+            String fullPath = "/com/synthwave/timetracker/" + resourceName;
+            parentPanel.debugLog("Attempting to load: " + fullPath);
+            try (InputStream is = getClass().getResourceAsStream(fullPath)) {
+                if (is == null) {
+                    parentPanel.debugLog("Resource not found: " + fullPath);
+                    return new ImageIcon(new BufferedImage(iconWidth, iconHeight, BufferedImage.TYPE_INT_ARGB));
+                }
+                BufferedImage original = ImageIO.read(is);
+                Image scaled = original.getScaledInstance(iconWidth, iconHeight, Image.SCALE_SMOOTH);
+                parentPanel.debugLog("Loaded and scaled icon: " + fullPath);
+                return new ImageIcon(scaled);
+            } catch (IOException e) {
+                parentPanel.debugLog("Error loading image " + fullPath + ": " + e.getMessage());
+                return new ImageIcon(new BufferedImage(iconWidth, iconHeight, BufferedImage.TYPE_INT_ARGB));
+            }
+        }
 
         @Override
         public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel,
             boolean expanded, boolean leaf, int row,
             boolean hasFocus) {
-            Component c = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+            super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
+
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
             Object userObject = node.getUserObject();
 
@@ -187,25 +269,30 @@ class SessionPanel extends GradientPanel {
                 Session session = (Session) userObject;
                 String displayText = session.getName() + " (" + session.getFormattedRemainingTime() + ")";
                 setText(displayText);
-                setIcon(null);  // no icon for sessions
+                setIcon(null);
             } else if (userObject instanceof Task) {
                 Task task = (Task) userObject;
                 setText(task.getName());
+
                 switch (task.getState()) {
                     case "To-Do":
-                        setIcon(toDoIcon);
+                        setIcon(pickRandomIcon(todoIcons));
                         break;
                     case "In-Progress":
-                        setIcon(inProgressIcon);
+                        setIcon(pickRandomIcon(inProgressIcons));
                         break;
                     case "Done":
-                        setIcon(doneIcon);
+                        setIcon(pickRandomIcon(doneIcons));
                         break;
                     default:
                         setIcon(null);
                 }
             }
-            return c;
+            return this;
+        }
+
+        private Icon pickRandomIcon(Icon[] icons) {
+            return icons[random.nextInt(icons.length)];
         }
     }
 }
