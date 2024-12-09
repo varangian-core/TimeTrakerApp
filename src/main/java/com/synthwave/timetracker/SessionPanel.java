@@ -3,14 +3,13 @@ package com.synthwave.timetracker;
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
 import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
 class SessionPanel extends GradientPanel {
-    private DefaultListModel<Session> sessionListModel;
     private JTree sessionTree;
     private DefaultMutableTreeNode root;
     private DefaultTreeModel treeModel;
@@ -35,16 +34,22 @@ class SessionPanel extends GradientPanel {
         JScrollPane sessionScrollPane = new JScrollPane(sessionTree);
         add(sessionScrollPane, BorderLayout.CENTER);
 
+        // Panel to add new sessions
         JPanel addSessionPanel = new JPanel(new BorderLayout());
         GradientLabel addSessionLabel = new GradientLabel("Add Session");
         addSessionPanel.add(addSessionLabel, BorderLayout.NORTH);
 
+        // Set a tooltip explaining how to create sessions and drag tasks in
+        addSessionPanel.setToolTipText("<html><b>Instructions:</b><br>"
+            + "1. Enter a session name and duration, then click 'Add Session' or press Enter.<br>"
+            + "2. Once sessions are created, you can drag and drop tasks into them from the other panel.</html>");
+
         JTextField sessionNameField = new JTextField();
-        sessionNameField.setPreferredSize(new Dimension(0, 30)); // Set height for input fields
+        sessionNameField.setPreferredSize(new Dimension(0, 30));
         addSessionPanel.add(sessionNameField, BorderLayout.CENTER);
 
         JTextField sessionDurationField = new JTextField();
-        sessionDurationField.setPreferredSize(new Dimension(50, 30)); // Set height for input fields
+        sessionDurationField.setPreferredSize(new Dimension(50, 30));
         addSessionPanel.add(sessionDurationField, BorderLayout.EAST);
 
         addSessionLabel.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -74,6 +79,8 @@ class SessionPanel extends GradientPanel {
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "Invalid duration entered.", "Error", JOptionPane.ERROR_MESSAGE);
             }
+        } else {
+            JOptionPane.showMessageDialog(null, "Please enter both session name and duration.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -89,31 +96,12 @@ class SessionPanel extends GradientPanel {
         return null;
     }
 
-    public void updateTaskNode(Task task) {
-        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
-        updateTaskNodeRecursive(rootNode, task);
-    }
-
-    private void updateTaskNodeRecursive(DefaultMutableTreeNode node, Task task) {
-        if (node.getUserObject() instanceof Task) {
-            Task nodeTask = (Task) node.getUserObject();
-            if (nodeTask.getName().equals(task.getName())) {
-                treeModel.nodeChanged(node);
-                return;
-            }
-        }
-        for (int i = 0; i < node.getChildCount(); i++) {
-            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) node.getChildAt(i);
-            updateTaskNodeRecursive(childNode, task);
-        }
-    }
-
     public void updateSessionDisplay() {
         treeModel.reload();
         sessionTree.repaint();
     }
 
-    // Refresh the tree to reflect the latest tasks and their statuses
+    // Refresh the entire tree, e.g. after tasks are dragged in
     public void refreshTree() {
         List<DefaultMutableTreeNode> sessionNodes = getSessionNodes();
         for (DefaultMutableTreeNode sessionNode : sessionNodes) {
@@ -134,6 +122,31 @@ class SessionPanel extends GradientPanel {
             sessionNodes.add((DefaultMutableTreeNode) root.getChildAt(i));
         }
         return sessionNodes;
+    }
+
+    /**
+     * Update the specific task node in the tree after a task’s state or other properties have changed.
+     */
+    public void updateTaskNode(Task task) {
+        DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
+        updateTaskNodeRecursive(rootNode, task);
+    }
+
+    private void updateTaskNodeRecursive(DefaultMutableTreeNode node, Task task) {
+        Object userObject = node.getUserObject();
+        if (userObject instanceof Task) {
+            Task nodeTask = (Task) userObject;
+            if (nodeTask.getName().equals(task.getName())) {
+                // Found the matching task node
+                treeModel.nodeChanged(node);
+                return;
+            }
+        }
+
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) node.getChildAt(i);
+            updateTaskNodeRecursive(childNode, task);
+        }
     }
 
     private static class RoundedBorder extends AbstractBorder {
@@ -163,7 +176,9 @@ class SessionPanel extends GradientPanel {
         private final Icon doneIcon = UIManager.getIcon("OptionPane.questionIcon");
 
         @Override
-        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
+        public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel,
+            boolean expanded, boolean leaf, int row,
+            boolean hasFocus) {
             Component c = super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
             Object userObject = node.getUserObject();
@@ -172,11 +187,10 @@ class SessionPanel extends GradientPanel {
                 Session session = (Session) userObject;
                 String displayText = session.getName() + " (" + session.getFormattedRemainingTime() + ")";
                 setText(displayText);
-                setIcon(null);  // clear any previous icon
+                setIcon(null);  // no icon for sessions
             } else if (userObject instanceof Task) {
                 Task task = (Task) userObject;
                 setText(task.getName());
-
                 switch (task.getState()) {
                     case "To-Do":
                         setIcon(toDoIcon);
@@ -187,6 +201,8 @@ class SessionPanel extends GradientPanel {
                     case "Done":
                         setIcon(doneIcon);
                         break;
+                    default:
+                        setIcon(null);
                 }
             }
             return c;
