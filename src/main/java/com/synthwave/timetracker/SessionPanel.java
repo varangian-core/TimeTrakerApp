@@ -19,10 +19,6 @@ class SessionPanel extends GradientPanel {
     private DefaultMutableTreeNode root;
     private DefaultTreeModel treeModel;
 
-    // Debug components
-    private JTextArea debugArea;
-    private boolean debugMode = false; // Toggle this to enable/disable debug
-
     public SessionPanel() {
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(600, 400));
@@ -37,13 +33,9 @@ class SessionPanel extends GradientPanel {
         sessionTree = new JTree(treeModel);
         sessionTree.setRowHeight(24);
 
-        // Always create debugArea but only append logs if debugMode == true
-        debugArea = new JTextArea(5, 50);
-        debugArea.setEditable(false);
-        JScrollPane debugScroll = new JScrollPane(debugArea);
-        add(debugScroll, BorderLayout.EAST);
-
-        sessionTree.setCellRenderer(new SessionTreeCellRenderer(20, 20, this));
+        // Set the custom renderer
+        SessionTreeCellRenderer renderer = new SessionTreeCellRenderer(20, 20);
+        sessionTree.setCellRenderer(renderer);
 
         sessionTree.setDragEnabled(true);
         sessionTree.setDropMode(DropMode.ON);
@@ -78,10 +70,6 @@ class SessionPanel extends GradientPanel {
         sessionDurationField.addActionListener(e -> addSession(sessionNameField, sessionDurationField));
 
         add(addSessionPanel, BorderLayout.SOUTH);
-
-        if (debugMode) {
-            printClasspathResources();
-        }
     }
 
     private void addSession(JTextField sessionNameField, JTextField sessionDurationField) {
@@ -144,6 +132,10 @@ class SessionPanel extends GradientPanel {
     }
 
     public void updateTaskNode(Task task) {
+        // Clear the cached icon so that if the state changed, a new icon is picked
+        SessionTreeCellRenderer renderer = (SessionTreeCellRenderer) sessionTree.getCellRenderer();
+        renderer.clearCachedIconForTask(task);
+
         DefaultMutableTreeNode rootNode = (DefaultMutableTreeNode) treeModel.getRoot();
         updateTaskNodeRecursive(rootNode, task);
     }
@@ -163,40 +155,18 @@ class SessionPanel extends GradientPanel {
         }
     }
 
-    public void debugLog(String message) {
-        if (debugMode && debugArea != null) {
-            debugArea.append(message + "\n");
-        }
-    }
-
-    private void printClasspathResources() {
-        debugLog("Debug: Printing classpath resources");
-        try {
-            Enumeration<URL> resources = getClass().getClassLoader().getResources("");
-            while (resources.hasMoreElements()) {
-                URL url = resources.nextElement();
-                debugLog("Resource root: " + url);
-            }
-        } catch (IOException e) {
-            debugLog("Error enumerating resources: " + e.getMessage());
-        }
-    }
-
     private static class RoundedBorder extends AbstractBorder {
         private final int radius;
         RoundedBorder(int radius) {
             this.radius = radius;
         }
-
         public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
             g.setColor(c.getForeground());
             g.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
         }
-
         public Insets getBorderInsets(Component c) {
             return new Insets(this.radius + 1, this.radius + 1, this.radius + 2, this.radius);
         }
-
         public Insets getBorderInsets(Component c, Insets insets) {
             insets.left = this.radius + 1;
             insets.right = this.radius + 1;
@@ -214,15 +184,13 @@ class SessionPanel extends GradientPanel {
         private final int iconWidth;
         private final int iconHeight;
         private final Random random = new Random();
-        private final SessionPanel parentPanel;
 
-        // Map to store chosen icon index for each task so it doesn't flip
+        // Map to store chosen icon index for each task so it doesn't flip.
         private final Map<Task, Integer> chosenIconsForTasks = new HashMap<>();
 
-        public SessionTreeCellRenderer(int iconWidth, int iconHeight, SessionPanel parentPanel) {
+        public SessionTreeCellRenderer(int iconWidth, int iconHeight) {
             this.iconWidth = iconWidth;
             this.iconHeight = iconHeight;
-            this.parentPanel = parentPanel;
             loadIcons();
         }
 
@@ -245,18 +213,14 @@ class SessionPanel extends GradientPanel {
 
         private Icon loadAndScaleIcon(String resourceName) {
             String fullPath = "/com/synthwave/timetracker/" + resourceName;
-            parentPanel.debugLog("Attempting to load: " + fullPath);
             try (InputStream is = getClass().getResourceAsStream(fullPath)) {
                 if (is == null) {
-                    parentPanel.debugLog("Resource not found: " + fullPath);
                     return new ImageIcon(new BufferedImage(iconWidth, iconHeight, BufferedImage.TYPE_INT_ARGB));
                 }
                 BufferedImage original = ImageIO.read(is);
                 Image scaled = original.getScaledInstance(iconWidth, iconHeight, Image.SCALE_SMOOTH);
-                parentPanel.debugLog("Loaded and scaled icon: " + fullPath);
                 return new ImageIcon(scaled);
             } catch (IOException e) {
-                parentPanel.debugLog("Error loading image " + fullPath + ": " + e.getMessage());
                 return new ImageIcon(new BufferedImage(iconWidth, iconHeight, BufferedImage.TYPE_INT_ARGB));
             }
         }
@@ -300,12 +264,17 @@ class SessionPanel extends GradientPanel {
         }
 
         private Icon chooseConsistentIcon(Task task, Icon[] icons) {
+            // If we don't have a chosen icon for this task, pick one at random
             if (!chosenIconsForTasks.containsKey(task)) {
-                // Choose once
                 int chosenIndex = random.nextInt(icons.length);
                 chosenIconsForTasks.put(task, chosenIndex);
             }
             return icons[chosenIconsForTasks.get(task)];
+        }
+
+        public void clearCachedIconForTask(Task task) {
+            // Remove the cached entry so that next time we pick a new icon
+            chosenIconsForTasks.remove(task);
         }
     }
 }
