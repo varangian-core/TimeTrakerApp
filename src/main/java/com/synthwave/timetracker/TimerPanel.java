@@ -5,35 +5,31 @@ import javax.swing.border.AbstractBorder;
 import java.awt.*;
 import java.awt.event.ActionListener;
 
-public class TimerPanel extends JPanel {
+public class TimerPanel extends JPanel implements ThemedComponent {
     public PomodoroTimer pomodoroTimer;
     private boolean isMinimized = false;
     private JButton minimizeButton;
     private JButton maximizeButton;
+    private JButton themeToggleButton;
 
     public TimerPanel(SessionPanel sessionPanel, JFrame frame) {
-        setLayout(new BorderLayout());
-        setBackground(new Color(255, 255, 255));
+        setLayout(null);
         setPreferredSize(new Dimension(600, 200));
 
         JLabel timerLabel = new JLabel("00:00");
-        timerLabel.setForeground(Color.BLACK);
         timerLabel.setHorizontalAlignment(SwingConstants.CENTER);
         timerLabel.setFont(new Font("Serif", Font.BOLD, 48));
-
-        JPanel timerContainer = new JPanel(new BorderLayout());
-        timerContainer.setOpaque(false);
-        timerContainer.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-        timerContainer.add(timerLabel, BorderLayout.CENTER);
+        timerLabel.setBounds(200, 40, 200, 60);
+        add(timerLabel);
 
         minimizeButton = createMinimizeButton(frame);
-        maximizeButton = createMaximizeButton(frame);
-        maximizeButton.setVisible(false);
+        minimizeButton.setBounds(10, 10, 40, 40);
+        add(minimizeButton);
 
-        JPanel controlButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        controlButtonPanel.setOpaque(false);
-        controlButtonPanel.add(minimizeButton);
-        controlButtonPanel.add(maximizeButton);
+        maximizeButton = createMaximizeButton(frame);
+        maximizeButton.setBounds(60, 10, 40, 40);
+        maximizeButton.setVisible(false);
+        add(maximizeButton);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.setOpaque(false);
@@ -41,27 +37,86 @@ public class TimerPanel extends JPanel {
         buttonPanel.add(createRoundedButton("Pause", e -> pomodoroTimer.pause()));
         buttonPanel.add(createRoundedButton("Stop", e -> pomodoroTimer.stop()));
         buttonPanel.add(createRoundedButton("Reset", e -> pomodoroTimer.reset()));
+        buttonPanel.setBounds(150, 120, 300, 50);
+        add(buttonPanel);
 
-        JPanel buttonContainer = new JPanel(new BorderLayout());
-        buttonContainer.setOpaque(false);
-        buttonContainer.add(controlButtonPanel, BorderLayout.WEST);
-        buttonContainer.add(buttonPanel, BorderLayout.CENTER);
-
-        GradientPanel buttonGradientPanel = new GradientPanel();
-        buttonGradientPanel.setPreferredSize(new Dimension(600, 50));
-        buttonGradientPanel.setOpaque(false);
-        buttonGradientPanel.add(buttonContainer);
-
-        add(timerContainer, BorderLayout.CENTER);
-        add(buttonGradientPanel, BorderLayout.NORTH);
+        themeToggleButton = new JButton("☀");
+        themeToggleButton.setToolTipText("Change Theme");
+        themeToggleButton.setFocusPainted(false);
+        themeToggleButton.setBounds(550, 150, 40, 40);
+        themeToggleButton.addActionListener(e -> cycleTheme());
+        add(themeToggleButton);
 
         pomodoroTimer = new PomodoroTimer(timerLabel, sessionPanel);
+
+        // Register and apply theme
+        ThemeManager.register(this);
+        applyTheme(ThemeManager.getTheme());
+    }
+
+    private void cycleTheme() {
+        Theme current = ThemeManager.getTheme();
+        switch (current) {
+            case LIGHT:
+                ThemeManager.setTheme(Theme.DARK);
+                break;
+            case DARK:
+                ThemeManager.setTheme(Theme.SYNTHWAVE);
+                break;
+            case SYNTHWAVE:
+                ThemeManager.setTheme(Theme.LIGHT);
+                break;
+        }
+    }
+
+    @Override
+    public void applyTheme(Theme theme) {
+        Color background;
+        Color foreground;
+
+        switch (theme) {
+            case LIGHT:
+                background = Color.WHITE;
+                foreground = Color.BLACK;
+                themeToggleButton.setText("☀");
+                break;
+            case DARK:
+                background = new Color(45,45,45);
+                foreground = Color.WHITE;
+                themeToggleButton.setText("🌑");
+                break;
+            case SYNTHWAVE:
+                background = new Color(40,0,40);
+                foreground = Color.MAGENTA;
+                themeToggleButton.setText("🎵");
+                break;
+            default:
+                background = Color.WHITE;
+                foreground = Color.BLACK;
+                themeToggleButton.setText("☀");
+        }
+
+        setBackground(background);
+        minimizeButton.setBackground(background);
+        minimizeButton.setForeground(foreground);
+        maximizeButton.setBackground(background);
+        maximizeButton.setForeground(foreground);
+        themeToggleButton.setBackground(background);
+        themeToggleButton.setForeground(foreground);
+
+        for (Component c : getComponents()) {
+            if (c instanceof JPanel) {
+                c.setBackground(background);
+                c.setForeground(foreground);
+            }
+            c.setForeground(foreground);
+        }
+
+        repaint();
     }
 
     private JButton createRoundedButton(String text, ActionListener actionListener) {
         JButton button = new JButton(text);
-        button.setForeground(Color.BLACK);
-        button.setBackground(new Color(173, 216, 230)); // Pastel blue
         button.setFocusPainted(false);
         button.setContentAreaFilled(false);
         button.setOpaque(true);
@@ -78,7 +133,6 @@ public class TimerPanel extends JPanel {
     private JButton createMinimizeButton(JFrame frame) {
         JButton button = new JButton("\u25F4");
         button.setFont(new Font("Serif", Font.BOLD, 24));
-        button.setForeground(Color.BLACK);
         button.setFocusPainted(false);
         button.setContentAreaFilled(false);
         button.setOpaque(true);
@@ -90,7 +144,6 @@ public class TimerPanel extends JPanel {
     private JButton createMaximizeButton(JFrame frame) {
         JButton button = new JButton("\u25F5");
         button.setFont(new Font("Serif", Font.BOLD, 24));
-        button.setForeground(Color.BLACK);
         button.setFocusPainted(false);
         button.setContentAreaFilled(false);
         button.setOpaque(true);
@@ -119,7 +172,6 @@ public class TimerPanel extends JPanel {
 
     static class RoundedBorder extends AbstractBorder {
         private final int radius;
-
         RoundedBorder(int radius) {
             this.radius = radius;
         }

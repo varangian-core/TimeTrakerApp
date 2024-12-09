@@ -9,23 +9,23 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
-class TaskPanel extends GradientPanel {
+class TaskPanel extends GradientPanel implements ThemedComponent {
     private DefaultListModel<Task> taskListModel;
     private JList<Task> taskList;
     private JTextField taskNameField;
     private SessionPanel sessionPanel;
+    private JLabel taskLabel;
 
     public TaskPanel(SessionPanel sessionPanel) {
         this.sessionPanel = sessionPanel;
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(200, 600));
 
-        JLabel taskLabel = new JLabel("Tasks");
-        taskLabel.setForeground(Color.BLACK);
+        taskLabel = new JLabel("Tasks");
         taskLabel.setHorizontalAlignment(SwingConstants.CENTER);
         add(taskLabel, BorderLayout.NORTH);
 
@@ -68,6 +68,10 @@ class TaskPanel extends GradientPanel {
         taskNameField.addActionListener(e -> addTask());
 
         add(addTaskPanel, BorderLayout.SOUTH);
+
+        // Register and apply theme
+        ThemeManager.register(this);
+        applyTheme(ThemeManager.getTheme());
     }
 
     private void addTask() {
@@ -88,25 +92,43 @@ class TaskPanel extends GradientPanel {
         sessionPanel.updateTaskNode(task);
     }
 
-    public static class RoundedBorder extends AbstractBorder {
-        private final int radius;
-        RoundedBorder(int radius) {
-            this.radius = radius;
+    @Override
+    public void applyTheme(Theme theme) {
+        Color background;
+        Color foreground;
+        Color panelBackground;
+
+        switch (theme) {
+            case LIGHT:
+                background = Color.WHITE;
+                foreground = Color.BLACK;
+                panelBackground = Color.LIGHT_GRAY;
+                break;
+            case DARK:
+                background = new Color(45,45,45);
+                foreground = Color.WHITE;
+                panelBackground = new Color(60,60,60);
+                break;
+            case SYNTHWAVE:
+                background = new Color(40,0,40);
+                foreground = Color.MAGENTA;
+                panelBackground = new Color(20,0,20);
+                break;
+            default:
+                background = Color.WHITE;
+                foreground = Color.BLACK;
+                panelBackground = Color.LIGHT_GRAY;
         }
-        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-            g.setColor(c.getForeground());
-            g.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
-        }
-        public Insets getBorderInsets(Component c) {
-            return new Insets(this.radius + 1, this.radius + 1, this.radius + 2, this.radius);
-        }
-        public Insets getBorderInsets(Component c, Insets insets) {
-            insets.left = this.radius + 1;
-            insets.right = this.radius + 1;
-            insets.top = this.radius + 2;
-            insets.bottom = this.radius;
-            return insets;
-        }
+
+        setBackground(panelBackground);
+        taskLabel.setForeground(foreground);
+
+        taskList.setBackground(background);
+        taskList.setForeground(foreground);
+        taskNameField.setBackground(background);
+        taskNameField.setForeground(foreground);
+
+        repaint();
     }
 
     private static class TaskListCellRenderer extends DefaultListCellRenderer {
@@ -177,8 +199,6 @@ class TaskPanel extends GradientPanel {
             }
 
             label.setIcon(chosenIcon);
-            label.setForeground(Color.BLACK);
-            label.setBackground(isSelected ? new Color(200, 200, 255) : new Color(240, 240, 240));
             return label;
         }
 

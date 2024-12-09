@@ -11,19 +11,23 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URL;
 import java.util.*;
 
-class SessionPanel extends GradientPanel {
+class SessionPanel extends GradientPanel implements ThemedComponent {
     private JTree sessionTree;
     private DefaultMutableTreeNode root;
     private DefaultTreeModel treeModel;
+
+    private JLabel sessionLabel;
+    private JTextField sessionNameField;
+    private JTextField sessionDurationField;
+    private GradientLabel addSessionLabel;
 
     public SessionPanel() {
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(600, 400));
 
-        JLabel sessionLabel = new JLabel("Sessions");
+        sessionLabel = new JLabel("Sessions");
         sessionLabel.setForeground(Color.BLACK);
         sessionLabel.setHorizontalAlignment(SwingConstants.CENTER);
         add(sessionLabel, BorderLayout.NORTH);
@@ -45,18 +49,18 @@ class SessionPanel extends GradientPanel {
         add(sessionScrollPane, BorderLayout.CENTER);
 
         JPanel addSessionPanel = new JPanel(new BorderLayout());
-        GradientLabel addSessionLabel = new GradientLabel("Add Session");
+        addSessionLabel = new GradientLabel("Add Session");
         addSessionPanel.add(addSessionLabel, BorderLayout.NORTH);
 
         addSessionPanel.setToolTipText("<html><b>Instructions:</b><br>"
             + "1. Enter a session name and duration, then click 'Add Session' or press Enter.<br>"
             + "2. Once sessions are created, you can drag and drop tasks into them from the other panel.</html>");
 
-        JTextField sessionNameField = new JTextField();
+        sessionNameField = new JTextField();
         sessionNameField.setPreferredSize(new Dimension(0, 30));
         addSessionPanel.add(sessionNameField, BorderLayout.CENTER);
 
-        JTextField sessionDurationField = new JTextField();
+        sessionDurationField = new JTextField();
         sessionDurationField.setPreferredSize(new Dimension(50, 30));
         addSessionPanel.add(sessionDurationField, BorderLayout.EAST);
 
@@ -70,6 +74,10 @@ class SessionPanel extends GradientPanel {
         sessionDurationField.addActionListener(e -> addSession(sessionNameField, sessionDurationField));
 
         add(addSessionPanel, BorderLayout.SOUTH);
+
+        // Register with ThemeManager and apply current theme
+        ThemeManager.register(this);
+        applyTheme(ThemeManager.getTheme());
     }
 
     private void addSession(JTextField sessionNameField, JTextField sessionDurationField) {
@@ -132,7 +140,6 @@ class SessionPanel extends GradientPanel {
     }
 
     public void updateTaskNode(Task task) {
-        // Clear the cached icon so that if the state changed, a new icon is picked
         SessionTreeCellRenderer renderer = (SessionTreeCellRenderer) sessionTree.getCellRenderer();
         renderer.clearCachedIconForTask(task);
 
@@ -153,6 +160,53 @@ class SessionPanel extends GradientPanel {
             DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) node.getChildAt(i);
             updateTaskNodeRecursive(childNode, task);
         }
+    }
+
+    @Override
+    public void applyTheme(Theme theme) {
+        Color background;
+        Color foreground;
+        Color panelBackground;
+
+        switch (theme) {
+            case LIGHT:
+                background = Color.WHITE;
+                foreground = Color.BLACK;
+                panelBackground = Color.LIGHT_GRAY;
+                break;
+            case DARK:
+                background = new Color(45, 45, 45);
+                foreground = Color.WHITE;
+                panelBackground = new Color(60,60,60);
+                break;
+            case SYNTHWAVE:
+                background = new Color(40,0,40);
+                foreground = Color.MAGENTA;
+                panelBackground = new Color(20,0,20);
+                break;
+            default:
+                background = Color.WHITE;
+                foreground = Color.BLACK;
+                panelBackground = Color.LIGHT_GRAY;
+        }
+
+        setBackground(panelBackground);
+        sessionLabel.setBackground(panelBackground);
+        sessionLabel.setForeground(foreground);
+
+        sessionTree.setBackground(background);
+        sessionTree.setForeground(foreground);
+
+        sessionNameField.setBackground(background);
+        sessionNameField.setForeground(foreground);
+
+        sessionDurationField.setBackground(background);
+        sessionDurationField.setForeground(foreground);
+
+        addSessionLabel.setForeground(foreground);
+        addSessionLabel.setBackground(panelBackground);
+
+        repaint();
     }
 
     private static class RoundedBorder extends AbstractBorder {
@@ -185,7 +239,6 @@ class SessionPanel extends GradientPanel {
         private final int iconHeight;
         private final Random random = new Random();
 
-        // Map to store chosen icon index for each task so it doesn't flip.
         private final Map<Task, Integer> chosenIconsForTasks = new HashMap<>();
 
         public SessionTreeCellRenderer(int iconWidth, int iconHeight) {
@@ -264,7 +317,6 @@ class SessionPanel extends GradientPanel {
         }
 
         private Icon chooseConsistentIcon(Task task, Icon[] icons) {
-            // If we don't have a chosen icon for this task, pick one at random
             if (!chosenIconsForTasks.containsKey(task)) {
                 int chosenIndex = random.nextInt(icons.length);
                 chosenIconsForTasks.put(task, chosenIndex);
@@ -273,7 +325,6 @@ class SessionPanel extends GradientPanel {
         }
 
         public void clearCachedIconForTask(Task task) {
-            // Remove the cached entry so that next time we pick a new icon
             chosenIconsForTasks.remove(task);
         }
     }

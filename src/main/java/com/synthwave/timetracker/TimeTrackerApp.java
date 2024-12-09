@@ -10,12 +10,17 @@ public class TimeTrackerApp {
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setSize(800, 600);
 
-            JPanel mainPanel = new GradientPanel(); // Use GradientPanel for main panel
+            JPanel mainPanel = new GradientPanel();
             mainPanel.setLayout(new BorderLayout());
 
             SessionPanel sessionPanel = new SessionPanel();
-            TaskPanel taskPanel = new TaskPanel(sessionPanel); // Pass sessionPanel to taskPanel
-            TimerPanel timerPanel = new TimerPanel(sessionPanel, frame); // Pass frame to TimerPanel
+            TaskPanel taskPanel = new TaskPanel(sessionPanel);
+            TimerPanel timerPanel = new TimerPanel(sessionPanel, frame);
+
+            // Also register mainPanel if you want it themed
+            if (mainPanel instanceof ThemedComponent) {
+                ThemeManager.register((ThemedComponent) mainPanel);
+            }
 
             mainPanel.add(taskPanel, BorderLayout.WEST);
             mainPanel.add(sessionPanel, BorderLayout.CENTER);
