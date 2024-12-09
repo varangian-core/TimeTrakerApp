@@ -1,5 +1,6 @@
 package com.synthwave.timetracker;
 
+import com.synthwave.timetracker.TimerPanel.RoundedBorder;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -53,11 +54,11 @@ class TaskStateDialog extends JDialog {
         button.setContentAreaFilled(false);
         button.setOpaque(true);
         button.setBorder(BorderFactory.createCompoundBorder(
-                button.getBorder(),
-                BorderFactory.createEmptyBorder(5, 15, 5, 15)
+            button.getBorder(),
+            BorderFactory.createEmptyBorder(5, 15, 5, 15)
         ));
         button.setFont(new Font("Serif", Font.BOLD, 14));
-        button.setBorder(new TaskPanel.RoundedBorder(15));
+        button.setBorder(new RoundedBorder(15)); // Use the standalone RoundedBorder class
         return button;
     }
 }
