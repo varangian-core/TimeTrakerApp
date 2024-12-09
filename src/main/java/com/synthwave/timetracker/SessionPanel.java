@@ -21,7 +21,7 @@ class SessionPanel extends GradientPanel {
 
     // Debug components
     private JTextArea debugArea;
-    private boolean debugMode = false;
+    private boolean debugMode = false; // Toggle this to enable/disable debug
 
     public SessionPanel() {
         setLayout(new BorderLayout());
@@ -37,13 +37,12 @@ class SessionPanel extends GradientPanel {
         sessionTree = new JTree(treeModel);
         sessionTree.setRowHeight(24);
 
-        // Initialize debug area first, so that debugLog can be used immediately
+        // Always create debugArea but only append logs if debugMode == true
         debugArea = new JTextArea(5, 50);
         debugArea.setEditable(false);
         JScrollPane debugScroll = new JScrollPane(debugArea);
         add(debugScroll, BorderLayout.EAST);
 
-        // Now we can safely set the cell renderer, since debugArea is ready
         sessionTree.setCellRenderer(new SessionTreeCellRenderer(20, 20, this));
 
         sessionTree.setDragEnabled(true);
@@ -188,13 +187,16 @@ class SessionPanel extends GradientPanel {
         RoundedBorder(int radius) {
             this.radius = radius;
         }
+
         public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
             g.setColor(c.getForeground());
             g.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
         }
+
         public Insets getBorderInsets(Component c) {
             return new Insets(this.radius + 1, this.radius + 1, this.radius + 2, this.radius);
         }
+
         public Insets getBorderInsets(Component c, Insets insets) {
             insets.left = this.radius + 1;
             insets.right = this.radius + 1;
@@ -213,6 +215,9 @@ class SessionPanel extends GradientPanel {
         private final int iconHeight;
         private final Random random = new Random();
         private final SessionPanel parentPanel;
+
+        // Map to store chosen icon index for each task so it doesn't flip
+        private final Map<Task, Integer> chosenIconsForTasks = new HashMap<>();
 
         public SessionTreeCellRenderer(int iconWidth, int iconHeight, SessionPanel parentPanel) {
             this.iconWidth = iconWidth;
@@ -273,26 +278,34 @@ class SessionPanel extends GradientPanel {
             } else if (userObject instanceof Task) {
                 Task task = (Task) userObject;
                 setText(task.getName());
+                Icon chosenIcon = null;
 
                 switch (task.getState()) {
                     case "To-Do":
-                        setIcon(pickRandomIcon(todoIcons));
+                        chosenIcon = chooseConsistentIcon(task, todoIcons);
                         break;
                     case "In-Progress":
-                        setIcon(pickRandomIcon(inProgressIcons));
+                        chosenIcon = chooseConsistentIcon(task, inProgressIcons);
                         break;
                     case "Done":
-                        setIcon(pickRandomIcon(doneIcons));
+                        chosenIcon = chooseConsistentIcon(task, doneIcons);
                         break;
                     default:
-                        setIcon(null);
+                        chosenIcon = null;
                 }
+
+                setIcon(chosenIcon);
             }
             return this;
         }
 
-        private Icon pickRandomIcon(Icon[] icons) {
-            return icons[random.nextInt(icons.length)];
+        private Icon chooseConsistentIcon(Task task, Icon[] icons) {
+            if (!chosenIconsForTasks.containsKey(task)) {
+                // Choose once
+                int chosenIndex = random.nextInt(icons.length);
+                chosenIconsForTasks.put(task, chosenIndex);
+            }
+            return icons[chosenIconsForTasks.get(task)];
         }
     }
 }

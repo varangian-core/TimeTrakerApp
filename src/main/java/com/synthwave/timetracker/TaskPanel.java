@@ -1,10 +1,17 @@
 package com.synthwave.timetracker;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Random;
 
 class TaskPanel extends GradientPanel {
     private DefaultListModel<Task> taskListModel;
@@ -24,7 +31,9 @@ class TaskPanel extends GradientPanel {
 
         taskListModel = new DefaultListModel<>();
         taskList = new JList<>(taskListModel);
-        taskList.setCellRenderer(new TaskListCellRenderer());
+
+        taskList.setFixedCellHeight(24);
+        taskList.setCellRenderer(new TaskListCellRenderer(20, 20));
         taskList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         taskList.setDragEnabled(true);
         taskList.setTransferHandler(new SessionTransferHandler());
@@ -38,6 +47,7 @@ class TaskPanel extends GradientPanel {
                 }
             }
         });
+
         JScrollPane taskScrollPane = new JScrollPane(taskList);
         add(taskScrollPane, BorderLayout.CENTER);
 
@@ -46,7 +56,7 @@ class TaskPanel extends GradientPanel {
         addTaskPanel.add(addTaskLabel, BorderLayout.NORTH);
 
         taskNameField = new JTextField();
-        taskNameField.setPreferredSize(new Dimension(0, 30)); // Set height to match session input field
+        taskNameField.setPreferredSize(new Dimension(0, 30));
         addTaskPanel.add(taskNameField, BorderLayout.CENTER);
 
         addTaskLabel.addMouseListener(new MouseAdapter() {
@@ -72,10 +82,10 @@ class TaskPanel extends GradientPanel {
 
     private void editTaskState(int index) {
         Task task = taskListModel.get(index);
-        TaskStateDialog dialog = new TaskStateDialog(task, sessionPanel); // Pass sessionPanel to dialog
+        TaskStateDialog dialog = new TaskStateDialog(task, sessionPanel);
         dialog.setVisible(true);
         taskList.repaint();
-        sessionPanel.updateTaskNode(task); // Update specific task node
+        sessionPanel.updateTaskNode(task);
     }
 
     public static class RoundedBorder extends AbstractBorder {
@@ -100,31 +110,84 @@ class TaskPanel extends GradientPanel {
     }
 
     private static class TaskListCellRenderer extends DefaultListCellRenderer {
-        private final Icon toDoIcon = UIManager.getIcon("OptionPane.informationIcon");
-        private final Icon inProgressIcon = UIManager.getIcon("OptionPane.warningIcon");
-        private final Icon doneIcon = UIManager.getIcon("OptionPane.questionIcon");
+        private Icon[] todoIcons;
+        private Icon[] inProgressIcons;
+        private Icon[] doneIcons;
+
+        private final int iconWidth;
+        private final int iconHeight;
+        private final Random random = new Random();
+        private final Map<Task, Integer> chosenIconsForTasks = new HashMap<>();
+
+        public TaskListCellRenderer(int iconWidth, int iconHeight) {
+            this.iconWidth = iconWidth;
+            this.iconHeight = iconHeight;
+            loadIcons();
+        }
+
+        private void loadIcons() {
+            todoIcons = new Icon[] {
+                loadAndScaleIcon("todo-1.png"),
+                loadAndScaleIcon("todo-2.png")
+            };
+
+            inProgressIcons = new Icon[] {
+                loadAndScaleIcon("inprogress-1.png"),
+                loadAndScaleIcon("inprogress-2.png")
+            };
+
+            doneIcons = new Icon[] {
+                loadAndScaleIcon("done-1.png"),
+                loadAndScaleIcon("done-2.png")
+            };
+        }
+
+        private Icon loadAndScaleIcon(String resourceName) {
+            String fullPath = "/com/synthwave/timetracker/" + resourceName;
+            try (InputStream is = getClass().getResourceAsStream(fullPath)) {
+                if (is == null) {
+                    return new ImageIcon(new BufferedImage(iconWidth, iconHeight, BufferedImage.TYPE_INT_ARGB));
+                }
+                BufferedImage original = ImageIO.read(is);
+                Image scaled = original.getScaledInstance(iconWidth, iconHeight, Image.SCALE_SMOOTH);
+                return new ImageIcon(scaled);
+            } catch (IOException e) {
+                return new ImageIcon(new BufferedImage(iconWidth, iconHeight, BufferedImage.TYPE_INT_ARGB));
+            }
+        }
 
         @Override
-        public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+        public Component getListCellRendererComponent(JList<?> list, Object value, int index,
+            boolean isSelected, boolean cellHasFocus) {
             JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             Task task = (Task) value;
             label.setText(task.getName());
 
+            Icon chosenIcon = null;
             switch (task.getState()) {
                 case "To-Do":
-                    label.setIcon(toDoIcon);
+                    chosenIcon = chooseConsistentIcon(task, todoIcons);
                     break;
                 case "In-Progress":
-                    label.setIcon(inProgressIcon);
+                    chosenIcon = chooseConsistentIcon(task, inProgressIcons);
                     break;
                 case "Done":
-                    label.setIcon(doneIcon);
+                    chosenIcon = chooseConsistentIcon(task, doneIcons);
                     break;
             }
 
+            label.setIcon(chosenIcon);
             label.setForeground(Color.BLACK);
             label.setBackground(isSelected ? new Color(200, 200, 255) : new Color(240, 240, 240));
             return label;
+        }
+
+        private Icon chooseConsistentIcon(Task task, Icon[] icons) {
+            if (!chosenIconsForTasks.containsKey(task)) {
+                int chosenIndex = random.nextInt(icons.length);
+                chosenIconsForTasks.put(task, chosenIndex);
+            }
+            return icons[chosenIconsForTasks.get(task)];
         }
     }
 }
