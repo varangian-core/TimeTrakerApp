@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ThemeManager {
+
   private static Theme currentTheme = Theme.LIGHT;
   private static final List<ThemedComponent> listeners = new ArrayList<>();
 

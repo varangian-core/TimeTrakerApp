@@ -28,7 +28,6 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
         setPreferredSize(new Dimension(600, 400));
 
         sessionLabel = new JLabel("Sessions");
-        sessionLabel.setForeground(Color.BLACK);
         sessionLabel.setHorizontalAlignment(SwingConstants.CENTER);
         add(sessionLabel, BorderLayout.NORTH);
 
@@ -37,7 +36,6 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
         sessionTree = new JTree(treeModel);
         sessionTree.setRowHeight(24);
 
-        // Set the custom renderer
         SessionTreeCellRenderer renderer = new SessionTreeCellRenderer(20, 20);
         sessionTree.setCellRenderer(renderer);
 
@@ -167,67 +165,53 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
         Color background;
         Color foreground;
         Color panelBackground;
+        Color borderColor; // Color for RoundedBorder
 
         switch (theme) {
             case LIGHT:
                 background = Color.WHITE;
                 foreground = Color.BLACK;
                 panelBackground = Color.LIGHT_GRAY;
+                borderColor = foreground; // black borders
                 break;
             case DARK:
                 background = new Color(45, 45, 45);
                 foreground = Color.WHITE;
-                panelBackground = new Color(60,60,60);
+                panelBackground = new Color(60, 60, 60);
+                borderColor = foreground; // white borders
                 break;
             case SYNTHWAVE:
                 background = new Color(40,0,40);
                 foreground = Color.MAGENTA;
                 panelBackground = new Color(20,0,20);
+                borderColor = new Color(255, 105, 180); // pink borders
                 break;
             default:
                 background = Color.WHITE;
                 foreground = Color.BLACK;
                 panelBackground = Color.LIGHT_GRAY;
+                borderColor = foreground;
         }
 
         setBackground(panelBackground);
-        sessionLabel.setBackground(panelBackground);
         sessionLabel.setForeground(foreground);
 
         sessionTree.setBackground(background);
         sessionTree.setForeground(foreground);
 
+        // Ensure fields and label use borderColor if they have RoundedBorder
         sessionNameField.setBackground(background);
-        sessionNameField.setForeground(foreground);
+        sessionNameField.setForeground(borderColor);
 
         sessionDurationField.setBackground(background);
-        sessionDurationField.setForeground(foreground);
+        sessionDurationField.setForeground(borderColor);
 
         addSessionLabel.setForeground(foreground);
         addSessionLabel.setBackground(panelBackground);
+        // If addSessionLabel or any button has RoundedBorder, also set its foreground to borderColor:
+        // addSessionLabel.setForeground(borderColor); // if needed
 
         repaint();
-    }
-
-    private static class RoundedBorder extends AbstractBorder {
-        private final int radius;
-        RoundedBorder(int radius) {
-            this.radius = radius;
-        }
-        public void paintBorder(Component c, Graphics g, int x, int y, int width, int height) {
-            g.setColor(c.getForeground());
-            g.drawRoundRect(x, y, width - 1, height - 1, radius, radius);
-        }
-        public Insets getBorderInsets(Component c) {
-            return new Insets(this.radius + 1, this.radius + 1, this.radius + 2, this.radius);
-        }
-        public Insets getBorderInsets(Component c, Insets insets) {
-            insets.left = this.radius + 1;
-            insets.right = this.radius + 1;
-            insets.top = this.radius + 2;
-            insets.bottom = this.radius;
-            return insets;
-        }
     }
 
     private static class SessionTreeCellRenderer extends DefaultTreeCellRenderer {
