@@ -7,6 +7,9 @@ public class ProgressCircle extends JComponent {
   private float progress = 0.0f; // 0.0 to 1.0 representing 0% to 100%
 
   public ProgressCircle() {
+    // Distinct colors to confirm it’s working:
+    setForeground(Color.GREEN);      // Arc color
+    setBackground(Color.LIGHT_GRAY); // Background circle color
     setPreferredSize(new Dimension(100, 100));
   }
 
@@ -35,12 +38,35 @@ public class ProgressCircle extends JComponent {
     g2d.setColor(getBackground());
     g2d.fillOval(x, y, size, size);
 
-    // Draw the progress arc
+    // Draw the progress arc from 0 degrees (3 o'clock) counterclockwise
     g2d.setColor(getForeground());
     int arcAngle = (int) (360 * progress);
-    g2d.fillArc(x, y, size, size, 90, -arcAngle);
-    // Starting from 90 degrees for a top start, and negative angle to fill clockwise
+    g2d.fillArc(x, y, size, size, 0, arcAngle);
+
+    // Optional: draw a thin gray outline to see the circle clearly
+    g2d.setColor(Color.DARK_GRAY);
+    g2d.setStroke(new BasicStroke(1f));
+    g2d.drawOval(x, y, size, size);
 
     g2d.dispose();
+  }
+
+  // Optional test harness
+  public static void main(String[] args) {
+    JFrame frame = new JFrame("ProgressCircle Test");
+    frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+    ProgressCircle circle = new ProgressCircle();
+    frame.add(circle);
+    frame.pack();
+    frame.setLocationRelativeTo(null);
+    frame.setVisible(true);
+
+    // Simulate progress increasing from 0% to 100% repeatedly
+    new Timer(100, e -> {
+      float newProgress = circle.progress + 0.01f;
+      if (newProgress > 1.0f) newProgress = 0.0f;
+      circle.setProgress(newProgress);
+    }).start();
   }
 }

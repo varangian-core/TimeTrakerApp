@@ -23,6 +23,8 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
     private JTextField sessionDurationField;
     private GradientLabel addSessionLabel;
 
+    private Theme currentTheme = ThemeManager.getTheme();
+
     public SessionPanel() {
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(600, 400));
@@ -36,7 +38,7 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
         sessionTree = new JTree(treeModel);
         sessionTree.setRowHeight(24);
 
-        SessionTreeCellRenderer renderer = new SessionTreeCellRenderer(20, 20);
+        SessionTreeCellRenderer renderer = new SessionTreeCellRenderer();
         sessionTree.setCellRenderer(renderer);
 
         sessionTree.setDragEnabled(true);
@@ -73,9 +75,8 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
 
         add(addSessionPanel, BorderLayout.SOUTH);
 
-        // Register with ThemeManager and apply current theme
         ThemeManager.register(this);
-        applyTheme(ThemeManager.getTheme());
+        applyTheme(currentTheme);
     }
 
     private void addSession(JTextField sessionNameField, JTextField sessionDurationField) {
@@ -162,29 +163,30 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
 
     @Override
     public void applyTheme(Theme theme) {
+        this.currentTheme = theme;
         Color background;
         Color foreground;
         Color panelBackground;
-        Color borderColor; // Color for RoundedBorder
+        Color borderColor;
 
         switch (theme) {
             case LIGHT:
                 background = Color.WHITE;
                 foreground = Color.BLACK;
                 panelBackground = Color.LIGHT_GRAY;
-                borderColor = foreground; // black borders
+                borderColor = foreground;
                 break;
             case DARK:
                 background = new Color(45, 45, 45);
                 foreground = Color.WHITE;
                 panelBackground = new Color(60, 60, 60);
-                borderColor = foreground; // white borders
+                borderColor = foreground;
                 break;
             case SYNTHWAVE:
                 background = new Color(40,0,40);
                 foreground = Color.MAGENTA;
                 panelBackground = new Color(20,0,20);
-                borderColor = new Color(255, 105, 180); // pink borders
+                borderColor = new Color(255, 105, 180);
                 break;
             default:
                 background = Color.WHITE;
@@ -199,7 +201,6 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
         sessionTree.setBackground(background);
         sessionTree.setForeground(foreground);
 
-        // Ensure fields and label use borderColor if they have RoundedBorder
         sessionNameField.setBackground(background);
         sessionNameField.setForeground(borderColor);
 
@@ -208,101 +209,166 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
 
         addSessionLabel.setForeground(foreground);
         addSessionLabel.setBackground(panelBackground);
-        // If addSessionLabel or any button has RoundedBorder, also set its foreground to borderColor:
-        // addSessionLabel.setForeground(borderColor); // if needed
 
+        sessionTree.repaint();
         repaint();
     }
 
-    private static class SessionTreeCellRenderer extends DefaultTreeCellRenderer {
+    static class SessionCellPanel extends JPanel {
+        JLabel label;
+        SessionProgressBar progressBar;
+
+        public SessionCellPanel(Theme theme) {
+            super(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            setOpaque(false);
+            label = new JLabel();
+            progressBar = new SessionProgressBar();
+            progressBar.setPreferredSize(new Dimension(80, 10));
+            add(label);
+            add(progressBar);
+        }
+
+        public void applyTheme(Theme theme, Color background, Color foreground, boolean selected) {
+            setBackground(selected ? UIManager.getColor("Tree.selectionBackground") : background);
+            if (theme == Theme.LIGHT && selected) {
+                // Keep text visible in light mode selection
+                label.setForeground(Color.BLACK);
+            } else {
+                label.setForeground(foreground);
+            }
+        }
+    }
+
+    private class SessionTreeCellRenderer extends DefaultTreeCellRenderer {
         private Icon[] todoIcons;
         private Icon[] inProgressIcons;
         private Icon[] doneIcons;
-
-        private final int iconWidth;
-        private final int iconHeight;
-        private final Random random = new Random();
-
         private final Map<Task, Integer> chosenIconsForTasks = new HashMap<>();
 
-        public SessionTreeCellRenderer(int iconWidth, int iconHeight) {
-            this.iconWidth = iconWidth;
-            this.iconHeight = iconHeight;
+        public SessionTreeCellRenderer() {
             loadIcons();
         }
 
         private void loadIcons() {
             todoIcons = new Icon[] {
-                loadAndScaleIcon("todo-1.png"),
-                loadAndScaleIcon("todo-2.png")
+                loadAndScaleIcon("todo-1.png", 20, 20),
+                loadAndScaleIcon("todo-2.png", 20, 20)
             };
 
             inProgressIcons = new Icon[] {
-                loadAndScaleIcon("inprogress-1.png"),
-                loadAndScaleIcon("inprogress-2.png")
+                loadAndScaleIcon("inprogress-1.png", 20, 20),
+                loadAndScaleIcon("inprogress-2.png", 20, 20)
             };
 
             doneIcons = new Icon[] {
-                loadAndScaleIcon("done-1.png"),
-                loadAndScaleIcon("done-2.png")
+                loadAndScaleIcon("done-1.png", 20, 20),
+                loadAndScaleIcon("done-2.png", 20, 20)
             };
         }
 
-        private Icon loadAndScaleIcon(String resourceName) {
+        private Icon loadAndScaleIcon(String resourceName, int w, int h) {
             String fullPath = "/com/synthwave/timetracker/" + resourceName;
             try (InputStream is = getClass().getResourceAsStream(fullPath)) {
                 if (is == null) {
-                    return new ImageIcon(new BufferedImage(iconWidth, iconHeight, BufferedImage.TYPE_INT_ARGB));
+                    return new ImageIcon(new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB));
                 }
                 BufferedImage original = ImageIO.read(is);
-                Image scaled = original.getScaledInstance(iconWidth, iconHeight, Image.SCALE_SMOOTH);
+                Image scaled = original.getScaledInstance(w, h, Image.SCALE_SMOOTH);
                 return new ImageIcon(scaled);
             } catch (IOException e) {
-                return new ImageIcon(new BufferedImage(iconWidth, iconHeight, BufferedImage.TYPE_INT_ARGB));
+                return new ImageIcon(new BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB));
             }
         }
 
         @Override
         public Component getTreeCellRendererComponent(JTree tree, Object value, boolean sel,
-            boolean expanded, boolean leaf, int row,
-            boolean hasFocus) {
+            boolean expanded, boolean leaf, int row, boolean hasFocus) {
+
             super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
 
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
             Object userObject = node.getUserObject();
 
+            Theme theme = ThemeManager.getTheme();
+            Color background;
+            Color foreground;
+            switch (theme) {
+                case LIGHT:
+                    background = Color.WHITE;
+                    foreground = Color.BLACK;
+                    break;
+                case DARK:
+                    background = new Color(45,45,45);
+                    foreground = Color.WHITE;
+                    break;
+                case SYNTHWAVE:
+                    background = new Color(40,0,40);
+                    foreground = Color.MAGENTA;
+                    break;
+                default:
+                    background = Color.WHITE;
+                    foreground = Color.BLACK;
+            }
+
             if (userObject instanceof Session) {
                 Session session = (Session) userObject;
-                String displayText = session.getName() + " (" + session.getFormattedRemainingTime() + ")";
-                setText(displayText);
-                setIcon(null);
+                SessionCellPanel panel = new SessionCellPanel(theme);
+
+                int total = session.getDuration() * 60;
+                int remaining = session.getRemainingTime();
+                int elapsed = total - remaining;
+                float progress = (total > 0) ? (float)elapsed / total : 0.0f;
+
+                panel.label.setText(session.getName() + " (" + session.getFormattedRemainingTime() + ")");
+                panel.progressBar.setProgress(progress);
+
+                panel.applyTheme(theme, background, foreground, sel);
+
+                if (sel) {
+                    // In Light mode, keep text black when selected
+                    if (theme == Theme.LIGHT) {
+                        panel.label.setForeground(Color.BLACK);
+                    }
+                }
+
+                return panel;
             } else if (userObject instanceof Task) {
                 Task task = (Task) userObject;
                 setText(task.getName());
-                Icon chosenIcon = null;
-
-                switch (task.getState()) {
-                    case "To-Do":
-                        chosenIcon = chooseConsistentIcon(task, todoIcons);
-                        break;
-                    case "In-Progress":
-                        chosenIcon = chooseConsistentIcon(task, inProgressIcons);
-                        break;
-                    case "Done":
-                        chosenIcon = chooseConsistentIcon(task, doneIcons);
-                        break;
-                    default:
-                        chosenIcon = null;
+                setIconForTask(task);
+                if (sel && theme == Theme.LIGHT) {
+                    // In LIGHT mode, ensure text remains visible
+                    setForeground(Color.BLACK);
+                    setBackgroundSelectionColor(Color.LIGHT_GRAY);
                 }
-
-                setIcon(chosenIcon);
+                return this;
+            } else {
+                // Root or unknown
+                return this;
             }
-            return this;
+        }
+
+        private void setIconForTask(Task task) {
+            Icon chosenIcon = null;
+            switch (task.getState()) {
+                case "To-Do":
+                    chosenIcon = chooseConsistentIcon(task, todoIcons);
+                    break;
+                case "In-Progress":
+                    chosenIcon = chooseConsistentIcon(task, inProgressIcons);
+                    break;
+                case "Done":
+                    chosenIcon = chooseConsistentIcon(task, doneIcons);
+                    break;
+                default:
+                    chosenIcon = null;
+            }
+            setIcon(chosenIcon);
         }
 
         private Icon chooseConsistentIcon(Task task, Icon[] icons) {
             if (!chosenIconsForTasks.containsKey(task)) {
-                int chosenIndex = random.nextInt(icons.length);
+                int chosenIndex = new Random().nextInt(icons.length);
                 chosenIconsForTasks.put(task, chosenIndex);
             }
             return icons[chosenIconsForTasks.get(task)];
