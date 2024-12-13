@@ -17,7 +17,13 @@ public class TimeTrackerApp {
             TaskPanel taskPanel = new TaskPanel(sessionPanel);
             TimerPanel timerPanel = new TimerPanel(sessionPanel, frame);
 
-            // Also register mainPanel if you want it themed
+            // Link SessionPanel to TimerPanel using the selection listener
+            sessionPanel.setSelectedSessionListener(selectedSession -> {
+                // When a session is selected, update the TimerPanel
+                timerPanel.updateSelectedSession(selectedSession);
+            });
+
+            // Register mainPanel if themed
             if (mainPanel instanceof ThemedComponent) {
                 ThemeManager.register((ThemedComponent) mainPanel);
             }
