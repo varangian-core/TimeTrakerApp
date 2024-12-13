@@ -5,12 +5,12 @@ import java.awt.*;
 
 public class SessionProgressBar extends JComponent {
   private float progress = 0.0f;
-  private final Color barColor = Color.GREEN; // Base stable color
-  private final int preferredWidth = 200;
-  private final int preferredHeight = 20;
+  // Pink gradient colors for the bar
+  private final Color startColor = new Color(255, 182, 193); // LightPink
+  private final Color endColor = new Color(255, 105, 180);   // HotPink
 
   public SessionProgressBar() {
-    setPreferredSize(new Dimension(preferredWidth, preferredHeight));
+    setPreferredSize(new Dimension(200, 20)); // Larger size as previously done
   }
 
   /**
@@ -30,21 +30,17 @@ public class SessionProgressBar extends JComponent {
   protected void paintComponent(Graphics g) {
     super.paintComponent(g);
     Graphics2D g2d = (Graphics2D) g.create();
-    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+        RenderingHints.VALUE_ANTIALIAS_ON);
 
     int width = getWidth();
     int height = getHeight();
 
-    // Draw background
     g2d.setColor(getBackground());
     g2d.fillRect(0, 0, width, height);
 
-    // Draw progress portion
     int filledWidth = (int) (width * progress);
     if (filledWidth > 0) {
-      // Create a gradient from a lighter green to a darker green
-      Color startColor = barColor.brighter();
-      Color endColor = barColor.darker();
       GradientPaint gradient = new GradientPaint(
           0, 0, startColor,
           filledWidth, 0, endColor
