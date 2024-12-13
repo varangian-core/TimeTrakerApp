@@ -1,6 +1,8 @@
 package com.synthwave.timetracker;
 
 import java.util.List;
+import java.util.Random;
+import java.util.function.Consumer;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
@@ -11,7 +13,9 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 class SessionPanel extends GradientPanel implements ThemedComponent {
     private JTree sessionTree;
@@ -24,6 +28,7 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
     private GradientLabel addSessionLabel;
 
     private Theme currentTheme = ThemeManager.getTheme();
+    private Consumer<Session> selectedSessionListener; // Listener for session selection
 
     public SessionPanel() {
         setLayout(new BorderLayout());
@@ -45,6 +50,14 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
         sessionTree.setDropMode(DropMode.ON);
         sessionTree.setTransferHandler(new SessionTransferHandler());
 
+        // Add selection listener to notify others when a session is selected
+        sessionTree.addTreeSelectionListener(e -> {
+            Session selected = getSelectedSession();
+            if (selectedSessionListener != null) {
+                selectedSessionListener.accept(selected);
+            }
+        });
+
         JScrollPane sessionScrollPane = new JScrollPane(sessionTree);
         add(sessionScrollPane, BorderLayout.CENTER);
 
@@ -54,7 +67,7 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
 
         addSessionPanel.setToolTipText("<html><b>Instructions:</b><br>"
             + "1. Enter a session name and duration, then click 'Add Session' or press Enter.<br>"
-            + "2. Once sessions are created, you can drag and drop tasks into them from the other panel.</html>");
+            + "2. Once sessions are created, you can select them and the TimerPanel will update accordingly.</html>");
 
         sessionNameField = new JTextField();
         sessionNameField.setPreferredSize(new Dimension(0, 30));
@@ -65,6 +78,7 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
         addSessionPanel.add(sessionDurationField, BorderLayout.EAST);
 
         addSessionLabel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
                 addSession(sessionNameField, sessionDurationField);
             }
@@ -77,6 +91,13 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
 
         ThemeManager.register(this);
         applyTheme(currentTheme);
+    }
+
+    /**
+     * Set a listener to be notified whenever a session is selected.
+     */
+    public void setSelectedSessionListener(Consumer<Session> listener) {
+        this.selectedSessionListener = listener;
     }
 
     private void addSession(JTextField sessionNameField, JTextField sessionDurationField) {
@@ -223,7 +244,7 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
             setOpaque(false);
             label = new JLabel();
             progressBar = new SessionProgressBar();
-            progressBar.setPreferredSize(new Dimension(80, 10));
+            progressBar.setPreferredSize(new Dimension(200, 20));
             add(label);
             add(progressBar);
         }
@@ -231,7 +252,6 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
         public void applyTheme(Theme theme, Color background, Color foreground, boolean selected) {
             setBackground(selected ? UIManager.getColor("Tree.selectionBackground") : background);
             if (theme == Theme.LIGHT && selected) {
-                // Keep text visible in light mode selection
                 label.setForeground(Color.BLACK);
             } else {
                 label.setForeground(foreground);
@@ -321,14 +341,10 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
 
                 panel.label.setText(session.getName() + " (" + session.getFormattedRemainingTime() + ")");
                 panel.progressBar.setProgress(progress);
-
                 panel.applyTheme(theme, background, foreground, sel);
 
-                if (sel) {
-                    // In Light mode, keep text black when selected
-                    if (theme == Theme.LIGHT) {
-                        panel.label.setForeground(Color.BLACK);
-                    }
+                if (sel && theme == Theme.LIGHT) {
+                    panel.label.setForeground(Color.BLACK);
                 }
 
                 return panel;
@@ -337,13 +353,11 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
                 setText(task.getName());
                 setIconForTask(task);
                 if (sel && theme == Theme.LIGHT) {
-                    // In LIGHT mode, ensure text remains visible
                     setForeground(Color.BLACK);
                     setBackgroundSelectionColor(Color.LIGHT_GRAY);
                 }
                 return this;
             } else {
-                // Root or unknown
                 return this;
             }
         }
