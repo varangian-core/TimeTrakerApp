@@ -6,17 +6,23 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 
 public class TimerPanel extends JPanel implements ThemedComponent {
-    public PomodoroTimer pomodoroTimer;
+    private PomodoroTimer pomodoroTimer;
     private boolean isMinimized = false;
     private JButton minimizeButton;
     private JButton maximizeButton;
     private JButton themeToggleButton;
+    private ProgressCircle progressCircle;
+    private JLabel timerLabel;
+
+    private SessionPanel sessionPanel; // store reference for use in updateSelectedSession()
 
     public TimerPanel(SessionPanel sessionPanel, JFrame frame) {
+        this.sessionPanel = sessionPanel;
+
         setLayout(null);
         setPreferredSize(new Dimension(600, 200));
 
-        JLabel timerLabel = new JLabel("00:00");
+        timerLabel = new JLabel("--:--");
         timerLabel.setHorizontalAlignment(SwingConstants.CENTER);
         timerLabel.setFont(new Font("Serif", Font.BOLD, 48));
         timerLabel.setBounds(200, 40, 200, 60);
@@ -34,9 +40,17 @@ public class TimerPanel extends JPanel implements ThemedComponent {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.setOpaque(false);
 
-        // We only want Start and Stop buttons now
-        JButton startButton = createRoundedButton("Start", e -> pomodoroTimer.start());
-        JButton stopButton = createRoundedButton("Stop", e -> pomodoroTimer.stop());
+        // Start and Stop buttons only
+        JButton startButton = createRoundedButton("Start", e -> {
+            if (pomodoroTimer != null) {
+                pomodoroTimer.start();
+            }
+        });
+        JButton stopButton = createRoundedButton("Stop", e -> {
+            if (pomodoroTimer != null) {
+                pomodoroTimer.stop();
+            }
+        });
 
         buttonPanel.add(startButton);
         buttonPanel.add(stopButton);
@@ -50,18 +64,61 @@ public class TimerPanel extends JPanel implements ThemedComponent {
         themeToggleButton.addActionListener(e -> cycleTheme());
         add(themeToggleButton);
 
-        // Get or create a session for pomodoroTimer
-        Session currentSession = sessionPanel.getSelectedSession();
-        if (currentSession == null) {
-            currentSession = new Session("Default Session", 5); // 5-minute default
-        }
+        // Add a ProgressCircle near the timer
+        progressCircle = new ProgressCircle();
+        progressCircle.setBounds(420, 40, 60, 60);
+        add(progressCircle);
 
-        // Instantiate pomodoroTimer with all required arguments
-        pomodoroTimer = new PomodoroTimer(timerLabel, sessionPanel, this, currentSession);
+        // Do not create PomodoroTimer here. Wait until a session is selected.
+        // Initially show --:-- and empty circle.
 
-        // Register and apply theme
         ThemeManager.register(this);
         applyTheme(ThemeManager.getTheme());
+    }
+
+    /**
+     * Called by SessionPanel (via a listener) when a new session is selected.
+     * If session is null, show --:-- and empty circle.
+     * Otherwise, create a new PomodoroTimer for the selected session.
+     */
+    public void updateSelectedSession(Session newSession) {
+        // Stop old timer if any
+        if (pomodoroTimer != null) {
+            pomodoroTimer.stop();
+            pomodoroTimer = null;
+        }
+
+        if (newSession == null) {
+            // No session selected
+            timerLabel.setText("--:--");
+            progressCircle.setProgress(0.0f);
+        } else {
+            // Create a new pomodoroTimer for the selected session
+            pomodoroTimer = new PomodoroTimer(timerLabel, sessionPanel, this, newSession);
+            // Update display without starting the timer
+            updateTimerDisplay(newSession);
+        }
+    }
+
+    /**
+     * Called by PomodoroTimer to update the circular progress fraction.
+     */
+    public void updateTimerProgress(float fraction) {
+        progressCircle.setProgress(fraction);
+    }
+
+    /**
+     * Update timer label and circle from the given session without starting timer.
+     */
+    private void updateTimerDisplay(Session session) {
+        int totalTime = session.getDuration() * 60;
+        int remainingTime = session.getRemainingTime();
+        int minutes = remainingTime / 60;
+        int seconds = remainingTime % 60;
+        timerLabel.setText(String.format("%02d:%02d", minutes, seconds));
+
+        float fraction = (totalTime > 0) ? (float)(totalTime - remainingTime) / totalTime : 0.0f;
+        updateTimerProgress(fraction);
     }
 
     private void cycleTheme() {
