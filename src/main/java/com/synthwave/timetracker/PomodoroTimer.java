@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 public class PomodoroTimer {
     private static final Logger LOGGER = Logger.getLogger(PomodoroTimer.class.getName());
 
+
     private Timer timer;
     private int remainingTime; // in seconds
     private int totalTime;     // total in seconds
@@ -27,7 +28,6 @@ public class PomodoroTimer {
         if (currentSession == null) {
             throw new IllegalArgumentException("Current session cannot be null");
         }
-
         this.timerLabel = timerLabel;
         this.sessionPanel = sessionPanel;
         this.timerPanel = timerPanel;
@@ -40,6 +40,7 @@ public class PomodoroTimer {
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Failed to load Pomodoro Timer state", e);
         }
+
 
         this.totalTime = currentSession.getDuration() * 60;
         this.remainingTime = currentSession.getRemainingTime();
@@ -55,6 +56,7 @@ public class PomodoroTimer {
                     updateDisplay();
                 } else {
                     timer.stop();
+
                     handleCompletion();
                 }
             }
