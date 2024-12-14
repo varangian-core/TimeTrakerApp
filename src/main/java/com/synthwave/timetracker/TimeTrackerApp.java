@@ -20,7 +20,7 @@ public class TimeTrackerApp {
                 sessionDao.createTable();
                 taskDao.createTable();
 
-                // Example: Preload some sample data
+                // Preload sample data (optional)
                 preloadData(sessionDao, taskDao);
 
                 // Create the main application window
@@ -32,7 +32,8 @@ public class TimeTrackerApp {
                 mainPanel.setLayout(new BorderLayout());
 
                 // Panels for the UI
-                SessionPanel sessionPanel = new SessionPanel(sessionDao);
+                // SessionPanel no longer takes sessionDao as a parameter
+                SessionPanel sessionPanel = new SessionPanel();
                 TaskPanel taskPanel = new TaskPanel(taskDao, sessionPanel);
                 TimerPanel timerPanel = new TimerPanel(sessionPanel, frame);
 
@@ -53,6 +54,7 @@ public class TimeTrackerApp {
 
                 frame.add(mainPanel);
                 frame.setVisible(true);
+
             } catch (Exception e) {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(null, "Failed to initialize the application: " + e.getMessage(),
@@ -62,16 +64,15 @@ public class TimeTrackerApp {
     }
 
     private static void preloadData(SessionDao sessionDao, TaskDao taskDao) throws Exception {
-        // Add some sample tasks (Now we use Task(int, String, String))
+        // If you still want to preload data into the DB:
         Task task1 = new Task(0, "Plan the day", "To-Do");
         Task task2 = new Task(0, "Code review", "In-Progress");
 
         int task1Id = taskDao.insert(task1, null); // No parent task
         int task2Id = taskDao.insert(task2, null); // No parent task
 
-        // Add some sample sessions
-        Session session1 = new Session(0, "Morning Routine", 1200, 600, task1Id); // 20 mins session
-        Session session2 = new Session(0, "Afternoon Coding", 1800, 0, task2Id); // 30 mins session
+        Session session1 = new Session(0, "Morning Routine", 1200, 600, task1Id);
+        Session session2 = new Session(0, "Afternoon Coding", 1800, 0, task2Id);
 
         sessionDao.insert(session1);
         sessionDao.insert(session2);

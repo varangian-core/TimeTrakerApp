@@ -1,20 +1,18 @@
 package com.synthwave.timetracker;
 
-import com.synthwave.timetracker.model.Session;
 import com.synthwave.timetracker.model.Task;
-import com.synthwave.timetracker.dao.SessionDao;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
-import java.util.List;
 import java.util.function.Consumer;
 
 class SessionPanel extends GradientPanel implements ThemedComponent {
     private JTree sessionTree;
     private DefaultMutableTreeNode root;
     private DefaultTreeModel treeModel;
+
     private JLabel sessionLabel;
     private JTextField sessionNameField;
     private JTextField sessionDurationField;
@@ -23,11 +21,7 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
     private Theme currentTheme = ThemeManager.getTheme();
     private Consumer<RuntimeSession> selectedSessionListener;
 
-    private SessionDao sessionDao; // DAO for database operations
-
-    public SessionPanel(SessionDao sessionDao) {
-        this.sessionDao = sessionDao;
-
+    public SessionPanel() {
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(600, 400));
 
@@ -39,6 +33,13 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
         treeModel = new DefaultTreeModel(root);
         sessionTree = new JTree(treeModel);
         sessionTree.setRowHeight(24);
+
+        SessionTreeCellRenderer renderer = new SessionTreeCellRenderer();
+        sessionTree.setCellRenderer(renderer);
+
+        sessionTree.setDragEnabled(true);
+        sessionTree.setDropMode(DropMode.ON);
+        sessionTree.setTransferHandler(new SessionTransferHandler());
 
         sessionTree.addTreeSelectionListener(e -> {
             RuntimeSession selected = getSelectedSession();
@@ -54,10 +55,17 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
         addSessionLabel = new GradientLabel("Add Session");
         addSessionPanel.add(addSessionLabel, BorderLayout.NORTH);
 
-        sessionNameField = new JTextField();
-        sessionDurationField = new JTextField();
+        addSessionPanel.setToolTipText("<html><b>Instructions:</b><br>"
+                + "1. Enter a session name and duration, then click 'Add Session' or press Enter.<br>"
+                + "2. Once sessions are created, you can select them and the TimerPanel will update accordingly.<br>"
+                + "3. You can drag tasks onto a session to assign them.</html>");
 
+        sessionNameField = new JTextField();
+        sessionNameField.setPreferredSize(new Dimension(0, 30));
         addSessionPanel.add(sessionNameField, BorderLayout.CENTER);
+
+        sessionDurationField = new JTextField();
+        sessionDurationField.setPreferredSize(new Dimension(50, 30));
         addSessionPanel.add(sessionDurationField, BorderLayout.EAST);
 
         addSessionLabel.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -72,17 +80,17 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
 
         add(addSessionPanel, BorderLayout.SOUTH);
 
-        // Load sessions from the database
-        loadSessionsFromDatabase();
-
         ThemeManager.register(this);
         applyTheme(currentTheme);
+    }
+
+    public void setSelectedSessionListener(Consumer<RuntimeSession> listener) {
+        this.selectedSessionListener = listener;
     }
 
     private void addSession(JTextField sessionNameField, JTextField sessionDurationField) {
         String sessionName = sessionNameField.getText().trim();
         String durationStr = sessionDurationField.getText().trim();
-
         if (!sessionName.isEmpty() && !durationStr.isEmpty()) {
             try {
                 int duration = Integer.parseInt(durationStr);
@@ -90,42 +98,13 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
                 DefaultMutableTreeNode sessionNode = new DefaultMutableTreeNode(runtimeSession);
                 root.add(sessionNode);
                 treeModel.reload();
-
-                // Save to database
-                Session session = new Session(0, sessionName, duration * 60, 0, 0);
-                sessionDao.insert(session);
-
                 sessionNameField.setText("");
                 sessionDurationField.setText("");
             } catch (NumberFormatException ex) {
                 JOptionPane.showMessageDialog(null, "Invalid duration entered.", "Error", JOptionPane.ERROR_MESSAGE);
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(null, "Failed to save session.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         } else {
             JOptionPane.showMessageDialog(null, "Please enter both session name and duration.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private void loadSessionsFromDatabase() {
-        try {
-            List<Session> sessions = sessionDao.getAll();
-            for (Session session : sessions) {
-                RuntimeSession runtimeSession = new RuntimeSession(session.getName(), session.getAssignedTime() / 60);
-                runtimeSession.setRemainingTime(session.getAssignedTime() - session.getCompletedTime());
-                // If you have logic to load tasks for each session, do it here and call runtimeSession.addTask(t) for each Task
-                DefaultMutableTreeNode sessionNode = new DefaultMutableTreeNode(runtimeSession);
-
-                // Add tasks as children if you have them:
-                for (Task t : runtimeSession.getTasks()) {
-                    sessionNode.add(new DefaultMutableTreeNode(t));
-                }
-
-                root.add(sessionNode);
-            }
-            treeModel.reload();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Failed to load sessions from database.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -141,56 +120,62 @@ class SessionPanel extends GradientPanel implements ThemedComponent {
         return null;
     }
 
-    public void setSelectedSessionListener(Consumer<RuntimeSession> listener) {
-        this.selectedSessionListener = listener;
-    }
-
-    /**
-     * Refresh the entire session display tree. This could be as simple as reloading the model.
-     * Call this if you need to reflect global changes.
-     */
     public void updateSessionDisplay() {
         treeModel.reload();
+        sessionTree.repaint();
     }
 
-    /**
-     * Update the tree to reflect changes to a specific task.
-     * This finds the node that contains a RuntimeSession with the given task, then rebuilds its children.
-     */
     public void updateTaskNode(Task updatedTask) {
-        DefaultMutableTreeNode sessionNode = findSessionNodeForTask((DefaultMutableTreeNode) root, updatedTask);
-        if (sessionNode != null) {
-            sessionNode.removeAllChildren();
-            RuntimeSession rs = (RuntimeSession) sessionNode.getUserObject();
-            for (Task t : rs.getTasks()) {
-                sessionNode.add(new DefaultMutableTreeNode(t));
-            }
-            treeModel.reload(sessionNode);
-        }
-    }
-
-    private DefaultMutableTreeNode findSessionNodeForTask(DefaultMutableTreeNode node, Task task) {
-        Object userObject = node.getUserObject();
-        if (userObject instanceof RuntimeSession) {
-            RuntimeSession rs = (RuntimeSession) userObject;
-            if (rs.getTasks().contains(task)) {
-                return node;
-            }
-        }
-
-        for (int i = 0; i < node.getChildCount(); i++) {
-            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) node.getChildAt(i);
-            DefaultMutableTreeNode result = findSessionNodeForTask(childNode, task);
-            if (result != null) {
-                return result;
-            }
-        }
-        return null;
+        // Reload the tree model to reflect changes in tasks (icons, state, etc.)
+        treeModel.reload();
+        sessionTree.repaint();
     }
 
     @Override
     public void applyTheme(Theme theme) {
         this.currentTheme = theme;
-        setBackground(Color.LIGHT_GRAY); // Example of applying the theme
+        Color background;
+        Color foreground;
+        Color panelBackground;
+
+        switch (theme) {
+            case LIGHT:
+                background = Color.WHITE;
+                foreground = Color.BLACK;
+                panelBackground = Color.LIGHT_GRAY;
+                break;
+            case DARK:
+                background = new Color(45,45,45);
+                foreground = Color.WHITE;
+                panelBackground = new Color(60,60,60);
+                break;
+            case SYNTHWAVE:
+                background = new Color(40,0,40);
+                foreground = Color.MAGENTA;
+                panelBackground = new Color(20,0,20);
+                break;
+            default:
+                background = Color.WHITE;
+                foreground = Color.BLACK;
+                panelBackground = Color.LIGHT_GRAY;
+        }
+
+        setBackground(panelBackground);
+        sessionLabel.setForeground(foreground);
+
+        sessionTree.setBackground(background);
+        sessionTree.setForeground(foreground);
+
+        sessionNameField.setBackground(background);
+        sessionNameField.setForeground(foreground);
+
+        sessionDurationField.setBackground(background);
+        sessionDurationField.setForeground(foreground);
+
+        addSessionLabel.setForeground(foreground);
+        addSessionLabel.setBackground(panelBackground);
+
+        sessionTree.repaint();
+        repaint();
     }
 }
