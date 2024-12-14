@@ -1,10 +1,9 @@
 package com.synthwave.timetracker.state;
 
 public class PomodoroState {
-    private int sessionId;      // ID of the session being tracked.
-    private int remainingTime;  // Remaining time in seconds.
+    private int sessionId;
+    private int remainingTime;
 
-    // Constructors
     public PomodoroState() {}
 
     public PomodoroState(int sessionId, int remainingTime) {
@@ -12,7 +11,6 @@ public class PomodoroState {
         this.remainingTime = remainingTime;
     }
 
-    // Getters and Setters
     public int getSessionId() {
         return sessionId;
     }

@@ -3,11 +3,10 @@ package com.synthwave.timetracker.model;
 public class Session {
     private int id;
     private String name;
-    private int assignedTime;  // Assigned time in seconds.
-    private int completedTime; // Completed time in seconds.
-    private int parentTaskId;  // Task ID that this session belongs to (can be null).
+    private int assignedTime;
+    private int completedTime;
+    private int parentTaskId;
 
-    // Constructors
     public Session() {}
 
     public Session(int id, String name, int assignedTime, int completedTime, int parentTaskId) {
@@ -18,7 +17,6 @@ public class Session {
         this.parentTaskId = parentTaskId;
     }
 
-    // Getters and Setters
     public int getId() {
         return id;
     }

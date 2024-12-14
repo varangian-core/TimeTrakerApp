@@ -4,13 +4,13 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-class Session implements Serializable {
+class RuntimeSession implements Serializable {
     private String name;
     private int duration; // in minutes
     private int remainingTime; // in seconds
     private List<Task> tasks;
 
-    public Session(String name, int duration) {
+    public RuntimeSession(String name, int duration) {
         this.name = name;
         this.duration = duration;
         this.remainingTime = duration * 60; // Convert duration to seconds

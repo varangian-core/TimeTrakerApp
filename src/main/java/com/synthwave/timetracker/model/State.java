@@ -5,7 +5,6 @@ public class State {
     private String name;
     private String value;
 
-    // Constructors
     public State() {}
 
     public State(int id, String name, String value) {
@@ -14,7 +13,6 @@ public class State {
         this.value = value;
     }
 
-    // Getters and Setters
     public int getId() {
         return id;
     }
