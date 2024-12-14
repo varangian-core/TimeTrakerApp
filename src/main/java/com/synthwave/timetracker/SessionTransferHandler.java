@@ -1,11 +1,11 @@
 package com.synthwave.timetracker;
 
+import com.synthwave.timetracker.model.Task; // Use the model.Task class
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.datatransfer.*;
 import java.io.IOException;
-import java.util.List;
 
 public class SessionTransferHandler extends TransferHandler {
     private final DataFlavor taskFlavor;
@@ -15,7 +15,7 @@ public class SessionTransferHandler extends TransferHandler {
     }
 
     @Override
-    public boolean canImport(TransferHandler.TransferSupport support) {
+    public boolean canImport(TransferSupport support) {
         if (!support.isDrop()) {
             return false;
         }
@@ -23,7 +23,7 @@ public class SessionTransferHandler extends TransferHandler {
     }
 
     @Override
-    public boolean importData(TransferHandler.TransferSupport support) {
+    public boolean importData(TransferSupport support) {
         if (!canImport(support)) {
             return false;
         }
@@ -39,14 +39,16 @@ public class SessionTransferHandler extends TransferHandler {
         JTree.DropLocation dropLocation = (JTree.DropLocation) support.getDropLocation();
         DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) dropLocation.getPath().getLastPathComponent();
 
-        if (parentNode.getUserObject() instanceof Session) {
+        if (parentNode.getUserObject() instanceof RuntimeSession) {
             DefaultTreeModel model = (DefaultTreeModel) ((JTree) support.getComponent()).getModel();
+            RuntimeSession runtimeSession = (RuntimeSession) parentNode.getUserObject();
+
             for (Task task : tasks) {
                 DefaultMutableTreeNode taskNode = new DefaultMutableTreeNode(task);
                 model.insertNodeInto(taskNode, parentNode, parentNode.getChildCount());
-                ((Session) parentNode.getUserObject()).addTask(task);
+                runtimeSession.addTask(task); // Now compatible
             }
-            model.nodeChanged(parentNode); // Notify model about the change
+            model.nodeChanged(parentNode);
             return true;
         }
         return false;
@@ -56,8 +58,11 @@ public class SessionTransferHandler extends TransferHandler {
     protected Transferable createTransferable(JComponent c) {
         if (c instanceof JList) {
             JList<?> list = (JList<?>) c;
-            List<?> values = list.getSelectedValuesList();
-            Task[] tasks = values.toArray(new Task[0]);
+            Object[] values = list.getSelectedValues();
+            Task[] tasks = new Task[values.length];
+            for (int i = 0; i < values.length; i++) {
+                tasks[i] = (Task) values[i];
+            }
             return new TaskTransferable(tasks);
         }
         return null;

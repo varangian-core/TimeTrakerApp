@@ -5,16 +5,33 @@ import java.util.ArrayList;
 import java.util.List;
 
 class Task implements Serializable {
+    private int id;
     private String name;
     private String state; // e.g., "To-Do", "In-Progress", "Done"
-    private List<Session> sessions;
-    private List<Task> subtasks; // New field for subtasks
+    private List<RuntimeSession> sessions; // Use RuntimeSession for runtime operations
+    private List<Task> subtasks;
 
+    // Constructor that matches the original usage (int, String, String)
+    public Task(int id, String name, String state) {
+        this(name, state);
+        this.id = id;
+    }
+
+    // Existing constructor
     public Task(String name, String state) {
         this.name = name;
         this.state = state;
         this.sessions = new ArrayList<>();
-        this.subtasks = new ArrayList<>(); // Initialize subtasks list
+        this.subtasks = new ArrayList<>();
+    }
+
+    // Getters and setters
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getName() {
@@ -33,15 +50,14 @@ class Task implements Serializable {
         this.state = state;
     }
 
-    public void addSession(Session session) {
+    public void addSession(RuntimeSession session) {
         this.sessions.add(session);
     }
 
-    public List<Session> getSessions() {
+    public List<RuntimeSession> getSessions() {
         return sessions;
     }
 
-    // New methods for subtasks
     public List<Task> getSubtasks() {
         return subtasks;
     }
@@ -52,6 +68,6 @@ class Task implements Serializable {
 
     @Override
     public String toString() {
-        return name;
+        return "Task{id=" + id + ", name='" + name + "', state='" + state + "'}";
     }
 }

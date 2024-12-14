@@ -1,5 +1,8 @@
 package com.synthwave.timetracker;
 
+import com.synthwave.timetracker.model.Task;
+import com.synthwave.timetracker.dao.TaskDao;
+
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.AbstractBorder;
@@ -19,8 +22,16 @@ class TaskPanel extends GradientPanel implements ThemedComponent {
     private JTextField taskNameField;
     private SessionPanel sessionPanel;
     private JLabel taskLabel;
+    private TaskDao taskDao; // Optional, if needed for database operations
 
+    // Original constructor
     public TaskPanel(SessionPanel sessionPanel) {
+        this(null, sessionPanel);
+    }
+
+    // Constructor called by TimeTrackerApp
+    public TaskPanel(TaskDao taskDao, SessionPanel sessionPanel) {
+        this.taskDao = taskDao;
         this.sessionPanel = sessionPanel;
         setLayout(new BorderLayout());
         setPreferredSize(new Dimension(200, 600));
@@ -69,7 +80,6 @@ class TaskPanel extends GradientPanel implements ThemedComponent {
 
         add(addTaskPanel, BorderLayout.SOUTH);
 
-        // Register and apply theme
         ThemeManager.register(this);
         applyTheme(ThemeManager.getTheme());
     }
@@ -80,6 +90,7 @@ class TaskPanel extends GradientPanel implements ThemedComponent {
             Task newTask = new Task(taskName, "To-Do");
             taskListModel.addElement(newTask);
             taskNameField.setText("");
+            // Refresh the session display to reflect new tasks if needed
             sessionPanel.updateSessionDisplay();
         }
     }
@@ -89,6 +100,7 @@ class TaskPanel extends GradientPanel implements ThemedComponent {
         TaskStateDialog dialog = new TaskStateDialog(task, sessionPanel);
         dialog.setVisible(true);
         taskList.repaint();
+        // Update the tree node associated with this task
         sessionPanel.updateTaskNode(task);
     }
 
@@ -149,18 +161,18 @@ class TaskPanel extends GradientPanel implements ThemedComponent {
 
         private void loadIcons() {
             todoIcons = new Icon[] {
-                loadAndScaleIcon("todo-1.png"),
-                loadAndScaleIcon("todo-2.png")
+                    loadAndScaleIcon("todo-1.png"),
+                    loadAndScaleIcon("todo-2.png")
             };
 
             inProgressIcons = new Icon[] {
-                loadAndScaleIcon("inprogress-1.png"),
-                loadAndScaleIcon("inprogress-2.png")
+                    loadAndScaleIcon("inprogress-1.png"),
+                    loadAndScaleIcon("inprogress-2.png")
             };
 
             doneIcons = new Icon[] {
-                loadAndScaleIcon("done-1.png"),
-                loadAndScaleIcon("done-2.png")
+                    loadAndScaleIcon("done-1.png"),
+                    loadAndScaleIcon("done-2.png")
             };
         }
 
@@ -180,7 +192,7 @@ class TaskPanel extends GradientPanel implements ThemedComponent {
 
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value, int index,
-            boolean isSelected, boolean cellHasFocus) {
+                                                      boolean isSelected, boolean cellHasFocus) {
             JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             Task task = (Task) value;
             label.setText(task.getName());

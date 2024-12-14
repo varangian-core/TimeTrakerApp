@@ -69,19 +69,17 @@ public class TimerPanel extends JPanel implements ThemedComponent {
         progressCircle.setBounds(420, 40, 60, 60);
         add(progressCircle);
 
-        // Do not create PomodoroTimer here. Wait until a session is selected.
-        // Initially show --:-- and empty circle.
-
+        // Initially show --:-- and empty circle, no PomodoroTimer created yet
         ThemeManager.register(this);
         applyTheme(ThemeManager.getTheme());
     }
 
     /**
-     * Called by SessionPanel (via a listener) when a new session is selected.
+     * Called by SessionPanel (via a listener) when a new RuntimeSession is selected.
      * If session is null, show --:-- and empty circle.
-     * Otherwise, create a new PomodoroTimer for the selected session.
+     * Otherwise, create a new PomodoroTimer for the selected runtime session.
      */
-    public void updateSelectedSession(Session newSession) {
+    public void updateSelectedSession(RuntimeSession newSession) {
         // Stop old timer if any
         if (pomodoroTimer != null) {
             pomodoroTimer.stop();
@@ -93,7 +91,7 @@ public class TimerPanel extends JPanel implements ThemedComponent {
             timerLabel.setText("--:--");
             progressCircle.setProgress(0.0f);
         } else {
-            // Create a new pomodoroTimer for the selected session
+            // Create a new pomodoroTimer for the selected runtime session
             pomodoroTimer = new PomodoroTimer(timerLabel, sessionPanel, this, newSession);
             // Update display without starting the timer
             updateTimerDisplay(newSession);
@@ -108,9 +106,9 @@ public class TimerPanel extends JPanel implements ThemedComponent {
     }
 
     /**
-     * Update timer label and circle from the given session without starting timer.
+     * Update timer label and circle from the given runtime session without starting timer.
      */
-    private void updateTimerDisplay(Session session) {
+    private void updateTimerDisplay(RuntimeSession session) {
         int totalTime = session.getDuration() * 60;
         int remainingTime = session.getRemainingTime();
         int minutes = remainingTime / 60;
@@ -188,8 +186,8 @@ public class TimerPanel extends JPanel implements ThemedComponent {
         button.setContentAreaFilled(false);
         button.setOpaque(true);
         button.setBorder(BorderFactory.createCompoundBorder(
-            button.getBorder(),
-            BorderFactory.createEmptyBorder(5, 15, 5, 15)
+                button.getBorder(),
+                BorderFactory.createEmptyBorder(5, 15, 5, 15)
         ));
         button.setFont(new Font("Serif", Font.BOLD, 14));
         button.setBorder(new RoundedBorder(15));

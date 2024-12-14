@@ -1,10 +1,11 @@
 package com.synthwave.timetracker;
 
+import com.synthwave.timetracker.model.Task;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-class RuntimeSession implements Serializable {
+public class RuntimeSession implements Serializable {
     private String name;
     private int duration; // in minutes
     private int remainingTime; // in seconds

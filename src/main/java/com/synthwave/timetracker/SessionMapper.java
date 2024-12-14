@@ -12,6 +12,7 @@ public class SessionMapper {
         persistentSession.setName(runtimeSession.getName());
         persistentSession.setAssignedTime(runtimeSession.getDuration() * 60); // Convert minutes to seconds
         persistentSession.setCompletedTime(runtimeSession.getDuration() * 60 - runtimeSession.getRemainingTime());
+        // If taskId is relevant, set it here: persistentSession.setTaskId(someTaskId);
         return persistentSession;
     }
 

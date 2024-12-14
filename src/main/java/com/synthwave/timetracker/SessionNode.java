@@ -3,19 +3,19 @@ package com.synthwave.timetracker;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 public class SessionNode extends DefaultMutableTreeNode {
-  private final Session session;
+  private final RuntimeSession runtimeSession;
 
-  public SessionNode(Session session) {
-    this.session = session;
+  public SessionNode(RuntimeSession runtimeSession) {
+    this.runtimeSession = runtimeSession;
   }
 
-  public Session getSession() {
-    return session;
+  public RuntimeSession getRuntimeSession() {
+    return runtimeSession;
   }
 
   @Override
   public String toString() {
-    return session.getName() + " (" + session.getFormattedRemainingTime() + ")";
+    // Ensure runtimeSession has the necessary methods: getName(), getFormattedRemainingTime()
+    return runtimeSession.getName() + " (" + runtimeSession.getFormattedRemainingTime() + ")";
   }
 }
-

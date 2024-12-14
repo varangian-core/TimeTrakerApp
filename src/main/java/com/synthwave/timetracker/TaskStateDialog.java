@@ -1,6 +1,8 @@
 package com.synthwave.timetracker;
 
+import com.synthwave.timetracker.model.Task; // Ensure this import matches your package structure
 import com.synthwave.timetracker.TimerPanel.RoundedBorder;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -36,7 +38,8 @@ class TaskStateDialog extends JDialog {
             @Override
             public void actionPerformed(ActionEvent e) {
                 task.setState((String) stateComboBox.getSelectedItem());
-                sessionPanel.updateTaskNode(task); // Update the specific task node
+                // If needed, call a method here to refresh SessionPanel, such as:
+                // sessionPanel.refreshTasks(); // This method must be implemented in SessionPanel if you want it.
                 dispose();
             }
         });
@@ -54,11 +57,11 @@ class TaskStateDialog extends JDialog {
         button.setContentAreaFilled(false);
         button.setOpaque(true);
         button.setBorder(BorderFactory.createCompoundBorder(
-            button.getBorder(),
-            BorderFactory.createEmptyBorder(5, 15, 5, 15)
+                button.getBorder(),
+                BorderFactory.createEmptyBorder(5, 15, 5, 15)
         ));
         button.setFont(new Font("Serif", Font.BOLD, 14));
-        button.setBorder(new RoundedBorder(15)); // Use the standalone RoundedBorder class
+        button.setBorder(new RoundedBorder(15)); // Uses the RoundedBorder from TimerPanel
         return button;
     }
 }
