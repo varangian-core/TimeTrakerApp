@@ -1,11 +1,10 @@
 package com.synthwave.timetracker;
 
-import com.synthwave.timetracker.model.Task;
 import com.synthwave.timetracker.dao.TaskDao;
+import com.synthwave.timetracker.model.Task; // Import the model Task class
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.border.AbstractBorder;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -22,7 +21,7 @@ class TaskPanel extends GradientPanel implements ThemedComponent {
     private JTextField taskNameField;
     private SessionPanel sessionPanel;
     private JLabel taskLabel;
-    private TaskDao taskDao; // Optional, if needed for database operations
+    private TaskDao taskDao; // If provided, can insert tasks into DB
 
     // Original constructor
     public TaskPanel(SessionPanel sessionPanel) {
@@ -87,10 +86,24 @@ class TaskPanel extends GradientPanel implements ThemedComponent {
     private void addTask() {
         String taskName = taskNameField.getText().trim();
         if (!taskName.isEmpty()) {
+            // Create a new Task object
             Task newTask = new Task(taskName, "To-Do");
+
+            // If we have a taskDao, persist the task in the database
+            if (taskDao != null) {
+                try {
+                    int newTaskId = taskDao.insert(newTask, null);
+                    newTask.setId(newTaskId);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    JOptionPane.showMessageDialog(this, "Failed to save task to the database: " + e.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+
+            // Add the new task to the UI list
             taskListModel.addElement(newTask);
             taskNameField.setText("");
-            // Refresh the session display to reflect new tasks if needed
             sessionPanel.updateSessionDisplay();
         }
     }
@@ -100,7 +113,6 @@ class TaskPanel extends GradientPanel implements ThemedComponent {
         TaskStateDialog dialog = new TaskStateDialog(task, sessionPanel);
         dialog.setVisible(true);
         taskList.repaint();
-        // Update the tree node associated with this task
         sessionPanel.updateTaskNode(task);
     }
 

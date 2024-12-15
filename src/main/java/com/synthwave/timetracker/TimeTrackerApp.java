@@ -3,7 +3,6 @@ package com.synthwave.timetracker;
 import com.synthwave.timetracker.dao.SessionDao;
 import com.synthwave.timetracker.dao.TaskDao;
 import com.synthwave.timetracker.model.Session;
-import com.synthwave.timetracker.model.Task;
 import com.synthwave.timetracker.config.DatabaseConfig;
 
 import javax.swing.*;
@@ -23,9 +22,6 @@ public class TimeTrackerApp {
                 sessionDao.createTable();
                 taskDao.createTable();
                 createPomodoroStateTable(); // Create pomodoro_state table
-
-                // Preload sample data (optional)
-                preloadData(sessionDao, taskDao);
 
                 // Create the main application window
                 JFrame frame = new JFrame("\uD83D\uDD52 Akari's Time Tracker \uD83E\uDD17");
@@ -65,23 +61,6 @@ public class TimeTrackerApp {
                         "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
-    }
-
-    private static void preloadData(SessionDao sessionDao, TaskDao taskDao) throws Exception {
-        // If you still want to preload data into the DB:
-        Task task1 = new Task(0, "Plan the day", "To-Do");
-        Task task2 = new Task(0, "Code review", "In-Progress");
-
-        int task1Id = taskDao.insert(task1, null); // No parent task
-        int task2Id = taskDao.insert(task2, null); // No parent task
-
-        Session session1 = new Session(0, "Morning Routine", 1200, 600, task1Id);
-        Session session2 = new Session(0, "Afternoon Coding", 1800, 0, task2Id);
-
-        sessionDao.insert(session1);
-        sessionDao.insert(session2);
-
-        System.out.println("Preloaded sample data into the database.");
     }
 
     private static void createPomodoroStateTable() throws Exception {

@@ -1,12 +1,12 @@
 package com.synthwave.timetracker;
 
-import com.synthwave.timetracker.model.Task;
-
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.util.function.Consumer;
+import com.synthwave.timetracker.model.Task;
+
 
 class SessionPanel extends GradientPanel implements ThemedComponent {
     private JTree sessionTree;

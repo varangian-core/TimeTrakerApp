@@ -1,7 +1,7 @@
 package com.synthwave.timetracker.dao;
 
 import com.synthwave.timetracker.config.DatabaseConfig;
-import com.synthwave.timetracker.model.Task; // Correct import
+import com.synthwave.timetracker.model.Task; // <-- Importing Task from model package
 
 import java.sql.*;
 import java.util.ArrayList;

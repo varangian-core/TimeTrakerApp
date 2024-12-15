@@ -1,5 +1,7 @@
 package com.synthwave.timetracker;
 
+import com.synthwave.timetracker.model.Task;
+
 import javax.swing.tree.DefaultMutableTreeNode;
 
 public class TaskNode extends DefaultMutableTreeNode {
