@@ -11,7 +11,7 @@ public class PomodoroStateManager {
     public void saveState(PomodoroState state) throws Exception {
         // Use MERGE or INSERT depending on your DB. Assuming H2 with MERGE:
         // session_key is now VARCHAR, not int
-        String sql = "MERGE INTO pomodoro_state (id, session_key, remaining_time) KEY(session_key) VALUES (NULL, ?, ?)";
+        String sql = "MERGE INTO pomodoro_state (session_key, remaining_time) KEY(session_key) VALUES (?, ?)\n";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, state.getSessionKey());

@@ -4,9 +4,12 @@ import com.synthwave.timetracker.dao.SessionDao;
 import com.synthwave.timetracker.dao.TaskDao;
 import com.synthwave.timetracker.model.Session;
 import com.synthwave.timetracker.model.Task;
+import com.synthwave.timetracker.config.DatabaseConfig;
 
 import javax.swing.*;
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.Statement;
 
 public class TimeTrackerApp {
     public static void main(String[] args) {
@@ -19,6 +22,7 @@ public class TimeTrackerApp {
                 // Create database tables
                 sessionDao.createTable();
                 taskDao.createTable();
+                createPomodoroStateTable(); // Create pomodoro_state table
 
                 // Preload sample data (optional)
                 preloadData(sessionDao, taskDao);
@@ -78,5 +82,20 @@ public class TimeTrackerApp {
         sessionDao.insert(session2);
 
         System.out.println("Preloaded sample data into the database.");
+    }
+
+    private static void createPomodoroStateTable() throws Exception {
+        String sql = """
+                CREATE TABLE IF NOT EXISTS pomodoro_state (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    session_key VARCHAR(255) UNIQUE,
+                    remaining_time INT
+                );
+                """;
+
+        try (Connection conn = DatabaseConfig.getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        }
     }
 }
