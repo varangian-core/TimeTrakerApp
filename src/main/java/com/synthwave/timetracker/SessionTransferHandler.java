@@ -35,32 +35,30 @@ public class SessionTransferHandler extends TransferHandler {
         try {
             tasks = (Task[]) transferable.getTransferData(taskFlavor);
         } catch (UnsupportedFlavorException | IOException e) {
+            e.printStackTrace();
             return false;
         }
 
         JTree.DropLocation dropLocation = (JTree.DropLocation) support.getDropLocation();
         DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) dropLocation.getPath().getLastPathComponent();
+
+        // Now we check if it's a RuntimeSession, not a Session
         Object userObject = parentNode.getUserObject();
-
         if (userObject instanceof RuntimeSession) {
-            RuntimeSession runtimeSession = (RuntimeSession) userObject;
-            JTree tree = (JTree) support.getComponent();
-            DefaultTreeModel model = (DefaultTreeModel) tree.getModel();
+            DefaultTreeModel model = (DefaultTreeModel) ((JTree) support.getComponent()).getModel();
 
-            // Add each dropped task to the runtime session and as a child node
+            RuntimeSession runtimeSession = (RuntimeSession) userObject;
             for (Task task : tasks) {
+                // Add the task to the runtime session
                 runtimeSession.addTask(task);
+
+                // Create a new node for the task and insert it under the session node
                 DefaultMutableTreeNode taskNode = new DefaultMutableTreeNode(task);
-                // Insert the new task node
                 model.insertNodeInto(taskNode, parentNode, parentNode.getChildCount());
             }
 
-            // Notify the model that the structure under parentNode may have changed
-            model.nodeStructureChanged(parentNode);
-
-            // Optionally expand the parent node to show the newly added tasks
-            tree.expandPath(dropLocation.getPath());
-
+            // Notify the model about changes to update the UI
+            model.nodeChanged(parentNode);
             return true;
         }
 
@@ -71,7 +69,7 @@ public class SessionTransferHandler extends TransferHandler {
     protected Transferable createTransferable(JComponent c) {
         if (c instanceof JList) {
             JList<?> list = (JList<?>) c;
-            // Use getSelectedValuesList() instead of deprecated getSelectedValues()
+            // Use getSelectedValuesList() to avoid deprecated APIs
             List<?> values = list.getSelectedValuesList();
             Task[] tasks = values.toArray(new Task[0]);
             return new TaskTransferable(tasks);

@@ -1,13 +1,20 @@
 package com.synthwave.timetracker.model;
 
-public class Task {
-    //TODO: change to enums
+import java.io.Serializable;
+
+/**
+ * Represents a task entity.
+ * This class is now serializable to support Drag-and-Drop operations.
+ */
+public class Task implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private int id;
     private String name;
     private String state;  // e.g., "Pending", "InProgress", "Completed"
     private String notes;
 
-    // No-arg constructor
+    // No-arg constructor needed for various frameworks and serialization
     public Task() {}
 
     // Full constructor
@@ -18,12 +25,12 @@ public class Task {
         this.notes = notes;
     }
 
-    // Convenience constructor for Task(int, String, String)
+    // Convenience constructor for (int, String, String)
     public Task(int id, String name, String state) {
         this(id, name, state, null);
     }
 
-    // Convenience constructor for Task(String, String)
+    // Convenience constructor for (String, String)
     public Task(String name, String state) {
         this(0, name, state, null);
     }
@@ -59,5 +66,10 @@ public class Task {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    @Override
+    public String toString() {
+        return "Task{id=" + id + ", name='" + name + "', state='" + state + "', notes='" + notes + "'}";
     }
 }
