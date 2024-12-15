@@ -1,11 +1,13 @@
 package com.synthwave.timetracker;
 
-import com.synthwave.timetracker.model.Task; // Use the model.Task class
+import com.synthwave.timetracker.model.Task;
+
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.datatransfer.*;
 import java.io.IOException;
+import java.util.List;
 
 public class SessionTransferHandler extends TransferHandler {
     private final DataFlavor taskFlavor;
@@ -38,19 +40,30 @@ public class SessionTransferHandler extends TransferHandler {
 
         JTree.DropLocation dropLocation = (JTree.DropLocation) support.getDropLocation();
         DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) dropLocation.getPath().getLastPathComponent();
+        Object userObject = parentNode.getUserObject();
 
-        if (parentNode.getUserObject() instanceof RuntimeSession) {
-            DefaultTreeModel model = (DefaultTreeModel) ((JTree) support.getComponent()).getModel();
-            RuntimeSession runtimeSession = (RuntimeSession) parentNode.getUserObject();
+        if (userObject instanceof RuntimeSession) {
+            RuntimeSession runtimeSession = (RuntimeSession) userObject;
+            JTree tree = (JTree) support.getComponent();
+            DefaultTreeModel model = (DefaultTreeModel) tree.getModel();
 
+            // Add each dropped task to the runtime session and as a child node
             for (Task task : tasks) {
+                runtimeSession.addTask(task);
                 DefaultMutableTreeNode taskNode = new DefaultMutableTreeNode(task);
+                // Insert the new task node
                 model.insertNodeInto(taskNode, parentNode, parentNode.getChildCount());
-                runtimeSession.addTask(task); // Now compatible
             }
-            model.nodeChanged(parentNode);
+
+            // Notify the model that the structure under parentNode may have changed
+            model.nodeStructureChanged(parentNode);
+
+            // Optionally expand the parent node to show the newly added tasks
+            tree.expandPath(dropLocation.getPath());
+
             return true;
         }
+
         return false;
     }
 
@@ -58,11 +71,9 @@ public class SessionTransferHandler extends TransferHandler {
     protected Transferable createTransferable(JComponent c) {
         if (c instanceof JList) {
             JList<?> list = (JList<?>) c;
-            Object[] values = list.getSelectedValues();
-            Task[] tasks = new Task[values.length];
-            for (int i = 0; i < values.length; i++) {
-                tasks[i] = (Task) values[i];
-            }
+            // Use getSelectedValuesList() instead of deprecated getSelectedValues()
+            List<?> values = list.getSelectedValuesList();
+            Task[] tasks = values.toArray(new Task[0]);
             return new TaskTransferable(tasks);
         }
         return null;

@@ -1,21 +1,29 @@
 package com.synthwave.timetracker;
 
 import com.synthwave.timetracker.model.Task;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class RuntimeSession implements Serializable {
+    private final UUID sessionId; // Unique ID for this session
     private String name;
     private int duration; // in minutes
     private int remainingTime; // in seconds
     private List<Task> tasks;
 
     public RuntimeSession(String name, int duration) {
+        this.sessionId = UUID.randomUUID(); // Generate a unique ID at creation
         this.name = name;
         this.duration = duration;
         this.remainingTime = duration * 60; // Convert duration to seconds
         this.tasks = new ArrayList<>();
+    }
+
+    public UUID getId() {
+        return sessionId;
     }
 
     public String getName() {
