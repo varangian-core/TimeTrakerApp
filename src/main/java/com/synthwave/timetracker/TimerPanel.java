@@ -14,11 +14,10 @@ public class TimerPanel extends JPanel implements ThemedComponent {
     private ProgressCircle progressCircle;
     private JLabel timerLabel;
 
-    private SessionPanel sessionPanel; // store reference for use in updateSelectedSession()
+    private SessionPanel sessionPanel; // Store reference for use in updateSelectedSession()
 
     public TimerPanel(SessionPanel sessionPanel, JFrame frame) {
         this.sessionPanel = sessionPanel;
-
         setLayout(null);
         setPreferredSize(new Dimension(600, 200));
 
@@ -40,12 +39,12 @@ public class TimerPanel extends JPanel implements ThemedComponent {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.setOpaque(false);
 
-        // Start and Stop buttons only
         JButton startButton = createRoundedButton("Start", e -> {
             if (pomodoroTimer != null) {
                 pomodoroTimer.start();
             }
         });
+
         JButton stopButton = createRoundedButton("Stop", e -> {
             if (pomodoroTimer != null) {
                 pomodoroTimer.stop();
@@ -64,57 +63,39 @@ public class TimerPanel extends JPanel implements ThemedComponent {
         themeToggleButton.addActionListener(e -> cycleTheme());
         add(themeToggleButton);
 
-        // Add a ProgressCircle near the timer
         progressCircle = new ProgressCircle();
         progressCircle.setBounds(420, 40, 60, 60);
         add(progressCircle);
 
-        // Initially show --:-- and empty circle, no PomodoroTimer created yet
         ThemeManager.register(this);
         applyTheme(ThemeManager.getTheme());
     }
 
-    /**
-     * Called by SessionPanel (via a listener) when a new RuntimeSession is selected.
-     * If session is null, show --:-- and empty circle.
-     * Otherwise, create a new PomodoroTimer for the selected runtime session.
-     */
     public void updateSelectedSession(RuntimeSession newSession) {
-        // Stop old timer if any
         if (pomodoroTimer != null) {
             pomodoroTimer.stop();
             pomodoroTimer = null;
         }
 
         if (newSession == null) {
-            // No session selected
             timerLabel.setText("--:--");
             progressCircle.setProgress(0.0f);
         } else {
-            // Create a new pomodoroTimer for the selected runtime session
             pomodoroTimer = new PomodoroTimer(timerLabel, sessionPanel, this, newSession);
-            // Update display without starting the timer
             updateTimerDisplay(newSession);
         }
     }
 
-    /**
-     * Called by PomodoroTimer to update the circular progress fraction.
-     */
     public void updateTimerProgress(float fraction) {
         progressCircle.setProgress(fraction);
     }
 
-    /**
-     * Update timer label and circle from the given runtime session without starting timer.
-     */
     private void updateTimerDisplay(RuntimeSession session) {
         int totalTime = session.getDuration() * 60;
         int remainingTime = session.getRemainingTime();
         int minutes = remainingTime / 60;
         int seconds = remainingTime % 60;
         timerLabel.setText(String.format("%02d:%02d", minutes, seconds));
-
         float fraction = (totalTime > 0) ? (float)(totalTime - remainingTime) / totalTime : 0.0f;
         updateTimerProgress(fraction);
     }
@@ -136,32 +117,25 @@ public class TimerPanel extends JPanel implements ThemedComponent {
 
     @Override
     public void applyTheme(Theme theme) {
-        Color background;
-        Color foreground;
+        Color background = theme.background;
+        Color foreground = theme.foreground;
 
         switch (theme) {
             case LIGHT:
-                background = Color.WHITE;
-                foreground = Color.BLACK;
                 themeToggleButton.setText("☀");
                 break;
             case DARK:
-                background = new Color(45,45,45);
-                foreground = Color.WHITE;
                 themeToggleButton.setText("🌑");
                 break;
             case SYNTHWAVE:
-                background = new Color(40,0,40);
-                foreground = Color.MAGENTA;
                 themeToggleButton.setText("🎵");
                 break;
             default:
-                background = Color.WHITE;
-                foreground = Color.BLACK;
                 themeToggleButton.setText("☀");
         }
 
         setBackground(background);
+        timerLabel.setForeground(foreground); // Set timer label color
         minimizeButton.setBackground(background);
         minimizeButton.setForeground(foreground);
         maximizeButton.setBackground(background);
@@ -172,7 +146,6 @@ public class TimerPanel extends JPanel implements ThemedComponent {
         for (Component c : getComponents()) {
             if (c instanceof JPanel) {
                 c.setBackground(background);
-                c.setForeground(foreground);
             }
             c.setForeground(foreground);
         }
@@ -186,8 +159,8 @@ public class TimerPanel extends JPanel implements ThemedComponent {
         button.setContentAreaFilled(false);
         button.setOpaque(true);
         button.setBorder(BorderFactory.createCompoundBorder(
-                button.getBorder(),
-                BorderFactory.createEmptyBorder(5, 15, 5, 15)
+            button.getBorder(),
+            BorderFactory.createEmptyBorder(5, 15, 5, 15)
         ));
         button.setFont(new Font("Serif", Font.BOLD, 14));
         button.setBorder(new RoundedBorder(15));
@@ -237,6 +210,7 @@ public class TimerPanel extends JPanel implements ThemedComponent {
 
     static class RoundedBorder extends AbstractBorder {
         private final int radius;
+
         RoundedBorder(int radius) {
             this.radius = radius;
         }
